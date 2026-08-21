@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -36,6 +36,21 @@ jobs:
           test -f _site/styles.css
           test -f _site/manifest.webmanifest
           test -f _site/src/timbres.js
+
+      - name: Synchronize current Pages branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd _site
+          git init
+          git checkout --orphan gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Publish current EarForge site"
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push --force origin gh-pages
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
