@@ -6,3 +6,5 @@ Le site GitHub Pages est construit à partir de `dist/EarForge_v0.7.0_RUNTIME.zi
 
 Version : 0.7.0
 Schéma d’état : 7
+
+URL de test : https://ksbmtj995d-cyber.github.io/EarForge/
