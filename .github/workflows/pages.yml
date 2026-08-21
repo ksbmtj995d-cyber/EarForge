@@ -1,0 +1,58 @@
+name: Deploy EarForge to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Build exact runtime artifact
+        shell: bash
+        run: |
+          rm -rf _unpack _site
+          mkdir -p _unpack _site
+          unzip -q dist/EarForge_v0.7.0_RUNTIME.zip -d _unpack
+          cp -a _unpack/EarForge_v0.7.0_RUNTIME/. _site/
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          root=Path('_site')
+          manifest=json.loads((root/'RUNTIME_MANIFEST.json').read_text())
+          required=manifest['requiredRuntimeFiles']
+          missing=[p for p in required if not (root/p).is_file()]
+          if missing:
+              raise SystemExit('Missing runtime files: '+', '.join(missing))
+          if len(required) != manifest['requiredRuntimeFileCount']:
+              raise SystemExit('Runtime manifest count mismatch')
+          print(f'Validated {len(required)} required runtime files')
+          PY
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
