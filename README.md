@@ -1,10 +1,30 @@
 # EarForge
 
-Déploiement de test de EarForge 0.7.0.
+EarForge est une application web d’entraînement auditif conçue pour travailler l’oreille musicale dans un environnement simple, rapide et accessible.
 
-Le site GitHub Pages est construit à partir de `dist/EarForge_v0.7.0_RUNTIME.zip`. Le workflow décompresse l’archive dans l’artefact Pages et vérifie la présence du manifeste runtime avant déploiement.
+## Ce qu’on peut travailler
 
-Version : 0.7.0
-Schéma d’état : 7
+- hauteur, intervalles et degrés ;
+- accords, renversements, progressions et cadences ;
+- gammes, modes et notes ;
+- rythme, pulsation et mesure ;
+- mémoire et contour mélodiques ;
+- détection d’erreurs mélodiques ;
+- reconnaissance de timbres réels : piano, violon, flûte, guitare acoustique, trompette et xylophone ;
+- production chantée et justesse fine.
 
-URL de test : https://ksbmtj995d-cyber.github.io/EarForge/
+## Expérience
+
+EarForge présente une seule tâche à la fois, adapte les révisions à la progression et peut fonctionner comme une application installée sur mobile. Le mode mains libres utilise la synthèse vocale du système lorsqu’elle est disponible.
+
+L’interface est pensée pour le tactile, le clavier et les lecteurs d’écran. Les résultats ne reposent jamais uniquement sur la couleur ou sur un son.
+
+## Données
+
+La progression est conservée localement dans le navigateur et peut être exportée puis restaurée. Les exercices de production vocale analysent le microphone localement ; aucun enregistrement vocal n’est sauvegardé par EarForge.
+
+## Licence
+
+EarForge est distribué sous licence MIT — © 2026 `ksbmtj995d-cyber`.
+
+Les ressources audio tierces conservent leurs propres conditions et attributions ; voir `THIRD_PARTY_NOTICES.md` dans la distribution.

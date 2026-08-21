@@ -24,26 +24,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Build exact runtime artifact
+      - name: Prepare site
         shell: bash
         run: |
-          rm -rf _unpack _site
-          mkdir -p _unpack _site
-          unzip -q dist/EarForge_v0.7.0_RUNTIME.zip -d _unpack
-          cp -a _unpack/EarForge_v0.7.0_RUNTIME/. _site/
-          python - <<'PY'
-          from pathlib import Path
-          import json
-          root=Path('_site')
-          manifest=json.loads((root/'RUNTIME_MANIFEST.json').read_text())
-          required=manifest['requiredRuntimeFiles']
-          missing=[p for p in required if not (root/p).is_file()]
-          if missing:
-              raise SystemExit('Missing runtime files: '+', '.join(missing))
-          if len(required) != manifest['requiredRuntimeFileCount']:
-              raise SystemExit('Runtime manifest count mismatch')
-          print(f'Validated {len(required)} required runtime files')
-          PY
+          rm -rf _site
+          mkdir _site
+          unzip -q dist/EarForge_v0.8.0.zip -d _site
+          test -f _site/index.html
+          test -f _site/app.js
+          test -f _site/styles.css
+          test -f _site/manifest.webmanifest
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
