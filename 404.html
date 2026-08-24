@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0a665f">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Entraînement auditif adaptatif, progressif et entièrement hors ligne.">
+  <meta name="application-name" content="EarForge">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="EarForge">
+  <meta name="format-detection" content="telephone=no">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
+  <title>EarForge</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Aller au contenu</a>
+  <div id="offlineBanner" class="offline-banner" hidden>Hors ligne. Tout reste disponible.</div>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="EarForge, accueil">
+      <img src="./icons/icon.svg" alt="" width="38" height="38">
+      <span>EarForge</span>
+    </a>
+    <button id="settingsButton" class="icon-button" type="button" aria-haspopup="dialog" aria-controls="settingsDialog" aria-label="Ouvrir les réglages">Réglages</button>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <section id="homeView" class="view home" aria-labelledby="homeTitle">
+      <div class="hero">
+        <p class="eyebrow">Votre écoute, aujourd’hui</p>
+        <h1 id="homeTitle">Une séance. Le bon prochain pas.</h1>
+        <p id="homeStatus" class="home-status">Le parcours s’ajuste après chaque réponse.</p>
+      </div>
+      <div class="primary-actions" aria-label="Commencer">
+        <button id="dailyButton" class="action-card primary" type="button">
+          <span class="action-title">Séance du jour</span>
+          <span class="action-note">Écouter, répondre, progresser</span>
+        </button>
+        <button id="handsFreeButton" class="action-card" type="button">
+          <span class="action-title">Mains libres</span>
+          <span class="action-note">La séance se déroule à voix haute</span>
+        </button>
+      </div>
+      <p class="privacy-note">Aucun compte. Aucune publicité. Vos progrès restent sur cet appareil.</p>
+    </section>
+
+    <section id="sessionView" class="view session" hidden aria-labelledby="sessionTitle">
+      <div class="session-head">
+        <button id="endButton" class="quiet-button" type="button">Terminer</button>
+        <div class="session-progress" aria-live="polite">
+          <span id="modeLabel">Séance</span>
+          <span id="progressLabel">1 sur 12</span>
+        </div>
+        <button id="pauseButton" class="quiet-button" type="button" hidden>Pause</button>
+      </div>
+      <div class="exercise-shell">
+        <p id="domainLabel" class="eyebrow">Écoute</p>
+        <h1 id="sessionTitle" class="prompt">Écoutez.</h1>
+        <button id="playButton" class="listen-button" type="button" aria-label="Écouter ou réécouter le son">
+          <span aria-hidden="true">▶</span>
+          <span>Écouter</span>
+        </button>
+        <div id="answerArea" class="answers" aria-label="Réponses"></div>
+        <div id="handsFreeRating" class="rating" hidden>
+          <button id="knownButton" type="button">Je savais</button>
+          <button id="reviewButton" type="button">À revoir</button>
+        </div>
+        <div id="feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true"></div>
+        <button id="continueButton" class="continue-button" type="button" hidden>Continuer</button>
+      </div>
+      <p class="shortcut-help">R pour réécouter. Touches 1 à 4 pour répondre.</p>
+    </section>
+
+    <section id="summaryView" class="view summary" hidden aria-labelledby="summaryTitle">
+      <p class="eyebrow">Séance terminée</p>
+      <h1 id="summaryTitle">Le parcours est mis à jour.</h1>
+      <p id="summaryText" class="summary-text"></p>
+      <button id="homeButton" class="main-button" type="button">Revenir à l’accueil</button>
+    </section>
+  </main>
+
+  <dialog id="settingsDialog" class="settings-dialog" aria-labelledby="settingsTitle">
+    <form id="settingsForm" method="dialog">
+      <div class="dialog-head">
+        <h1 id="settingsTitle">Réglages</h1>
+        <button id="closeSettingsButton" class="icon-button" type="button" aria-label="Fermer les réglages">Fermer</button>
+      </div>
+
+      <fieldset>
+        <legend>Séance</legend>
+        <label class="field">
+          <span>Durée</span>
+          <select id="sessionLength" name="sessionLength">
+            <option value="8">8 exercices</option>
+            <option value="12">12 exercices</option>
+            <option value="16">16 exercices</option>
+            <option value="20">20 exercices</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Instrument principal</span>
+          <select id="instrument" name="instrument">
+            <option value="piano">Piano</option>
+            <option value="guitar">Guitare</option>
+            <option value="strings">Cordes</option>
+            <option value="flute">Flûte</option>
+            <option value="organ">Orgue</option>
+          </select>
+        </label>
+        <label class="switch"><input id="speech" type="checkbox"><span>Voix en mode mains libres</span></label>
+        <label class="switch"><input id="transferTimbre" type="checkbox"><span>Varier progressivement les timbres</span></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Parcours optionnels</legend>
+        <label class="switch"><input id="worldTrack" type="checkbox"><span>Musiques orientales et du monde</span></label>
+        <p class="field-note">Ajoute micro-intervalles, cartes de tons, ajnas et maqamat au même planificateur.</p>
+        <label class="switch"><input id="experimentalTrack" type="checkbox"><span>Laboratoire avancé</span></label>
+        <p class="field-note">Ajoute accordages, écoute dans le bruit, polyrythmes et transferts difficiles.</p>
+      </fieldset>
+
+      <details>
+        <summary>Réglages avancés</summary>
+        <div class="details-body">
+          <label class="switch"><input id="noiseTraining" type="checkbox"><span>Robustesse dans un fond sonore léger</span></label>
+          <label class="field"><span>Diapason</span><select id="referencePitch"><option value="440">La 440 Hz</option><option value="442">La 442 Hz</option><option value="432">La 432 Hz</option></select></label>
+          <label class="switch"><input id="highContrast" type="checkbox"><span>Contraste renforcé</span></label>
+          <button id="resetButton" class="danger-button" type="button">Effacer la progression</button>
+        </div>
+      </details>
+
+      <div class="dialog-actions">
+        <button class="main-button" value="save" type="submit">Enregistrer</button>
+      </div>
+      <p class="version">EarForge 5.0.0 · Fonctionne hors ligne après la première ouverture.</p>
+    </form>
+  </dialog>
+
+  <noscript>EarForge nécessite JavaScript pour produire les sons et adapter les séances.</noscript>
+  <script src="./js/app.js" defer></script>
+</body>
+</html>
