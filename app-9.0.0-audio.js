@@ -22,22 +22,23 @@
     clear(){this.map.clear();this.bytes=0}
     stats(){return{entries:this.map.size,bytes:this.bytes,maxBytes:this.maxBytes}}
   }
-  function makeCurve(size=4096,drive=1.18){const x=new Float32Array(size),norm=Math.tanh(drive);for(let i=0;i<size;i++){const v=i*2/(size-1)-1;x[i]=Math.tanh(v*drive)/norm}return x}
+  function makeCurve(size=4096,threshold=.78,ceiling=.985){const x=new Float32Array(size),t=clamp(threshold,.5,.95),c=clamp(ceiling,t+.01,.999);for(let i=0;i<size;i++){const v=i*2/(size-1)-1,a=Math.abs(v);if(a<=t){x[i]=v;continue}const u=(a-t)/(1-t),h00=2*u*u*u-3*u*u+1,h10=u*u*u-2*u*u+u,h01=-2*u*u*u+3*u*u,m0=1-t,y=h00*t+h10*m0+h01*c;x[i]=Math.sign(v)*Math.min(c,Math.max(t,y))}return x}
+  const FORCED_RELEASE=.018,BUFFER_RELEASE=.016,BUFFER_ATTACK=.0012;
   class AudioEngine{
     constructor({volume=.64,maxCacheBytes=12*1024*1024}={}){
-      this.volume=clamp(volume,.05,.95);this.cache=new PCMCache(maxCacheBytes);this.context=null;this.input=null;this.master=null;this.compressor=null;this.room=null;this.roomGain=null;this.active=new Set();this.timers=new Set();this.token=0;
+      this.volume=clamp(volume,.05,.95);this.cache=new PCMCache(maxCacheBytes);this.context=null;this.input=null;this.mixInput=null;this.playbackBus=null;this.master=null;this.compressor=null;this.room=null;this.roomGain=null;this.active=new Set();this.timers=new Set();this.token=0;
     }
     async ensure(){
       if(!this.context){
         const C=globalThis.AudioContext||globalThis.webkitAudioContext;if(!C)throw new Error('Audio Web indisponible');
         try{this.context=new C({latencyHint:'interactive'})}catch{this.context=new C()}
-        const ctx=this.context,input=ctx.createGain(),subsonic=ctx.createBiquadFilter(),low=ctx.createBiquadFilter(),high=ctx.createBiquadFilter(),comp=ctx.createDynamicsCompressor(),shape=ctx.createWaveShaper(),master=ctx.createGain();
+        const ctx=this.context,mixInput=ctx.createGain(),subsonic=ctx.createBiquadFilter(),low=ctx.createBiquadFilter(),high=ctx.createBiquadFilter(),comp=ctx.createDynamicsCompressor(),shape=ctx.createWaveShaper(),master=ctx.createGain();
         subsonic.type='highpass';subsonic.frequency.value=24;subsonic.Q.value=.5;
         low.type='lowshelf';low.frequency.value=125;low.gain.value=-.4;high.type='highshelf';high.frequency.value=8500;high.gain.value=-.5;
-        comp.threshold.value=-8;comp.knee.value=10;comp.ratio.value=2;comp.attack.value=.008;comp.release.value=.18;
+        comp.threshold.value=-4;comp.knee.value=6;comp.ratio.value=2.5;comp.attack.value=.006;comp.release.value=.16;
         shape.curve=makeCurve();try{shape.oversample='2x'}catch{}
-        master.gain.value=this.volume;input.connect(subsonic).connect(low).connect(high).connect(comp).connect(shape).connect(master).connect(ctx.destination);
-        this.input=input;this.master=master;this.compressor=comp;
+        master.gain.value=this.volume;mixInput.connect(subsonic).connect(low).connect(high).connect(comp).connect(shape).connect(master).connect(ctx.destination);
+        this.mixInput=mixInput;this.master=master;this.compressor=comp;
         if(typeof ctx.createConvolver==='function'){
           const room=ctx.createConvolver(),roomGain=ctx.createGain(),impulse=ctx.createBuffer(2,Math.floor(ctx.sampleRate*.34),ctx.sampleRate),r=Kernel.rng('earforge-room-v5');
           for(let c=0;c<2;c++){const d=impulse.getChannelData(c);for(let i=0;i<d.length;i++){const t=i/d.length;d[i]=(r()*2-1)*Math.pow(1-t,3.4)*(.72-.12*c)}}
@@ -49,9 +50,11 @@
     setVolume(value){this.volume=clamp(value,.05,.95);if(this.master&&this.context)this.master.gain.setTargetAtTime(this.volume,this.context.currentTime,.018)}
     track(node){this.active.add(node);return node}
     cleanupGraph(nodes,endTime){
-      const delay=Math.max(0,(endTime-(this.context?.currentTime||0)+.015)*1000);const timer=setTimeout(()=>{this.timers.delete(timer);for(const n of nodes){try{n.disconnect()}catch{}this.active.delete(n)}},delay);this.timers.add(timer);
+      const delay=Math.max(0,(endTime-(this.context?.currentTime||0)+.065)*1000);const timer=setTimeout(()=>{this.timers.delete(timer);for(const n of nodes){try{n.disconnect()}catch{}this.active.delete(n)}},delay);this.timers.add(timer);
     }
-    stop(){this.token++;for(const t of this.timers)clearTimeout(t);this.timers.clear();for(const n of this.active){try{n.stop?.()}catch{}try{n.disconnect?.()}catch{}}this.active.clear()}
+    beginPlaybackBus(){const bus=this.track(this.context.createGain());bus.gain.setValueAtTime(1,this.context.currentTime);bus.connect(this.mixInput);this.playbackBus=bus;this.input=bus;return bus}
+    finishPlaybackBus(bus,endTime){const delay=Math.max(0,(endTime-(this.context?.currentTime||0)+.08)*1000),timer=setTimeout(()=>{this.timers.delete(timer);try{bus.disconnect()}catch{}this.active.delete(bus);if(this.playbackBus===bus){this.playbackBus=null;this.input=null}},delay);this.timers.add(timer)}
+    stop(){this.token++;const ctx=this.context,bus=this.playbackBus,old=[...this.active];for(const t of this.timers)clearTimeout(t);this.timers.clear();this.playbackBus=null;this.input=null;if(!old.length)return;const release=FORCED_RELEASE,now=ctx?.currentTime||0;if(bus&&ctx){try{const g=bus.gain,current=Math.max(.0001,Number(g.value)||1);g.cancelScheduledValues(now);g.setValueAtTime(current,now);g.linearRampToValueAtTime(0,now+release)}catch{}}const delay=ctx?Math.ceil((release+.035)*1000):0,timer=setTimeout(()=>{this.timers.delete(timer);for(const n of old){try{n.stop?.()}catch{}try{n.disconnect?.()}catch{}this.active.delete(n)}},delay);this.timers.add(timer)}
     generatedBuffer(key,factory){
       const cacheKey=`audio:${this.context.sampleRate}:${key}`;return this.cache.get(cacheKey,()=>{const pcm=factory(),b=this.context.createBuffer(1,pcm.length,this.context.sampleRate);b.copyToChannel(pcm,0);return b});
     }
@@ -62,15 +65,15 @@
       const ctx=this.context,o=this.track(ctx.createOscillator()),g=this.track(ctx.createGain());o.type=type;o.frequency.setValueAtTime(freq*ratio,start);o.detune.setValueAtTime(detune,start);const end=this.envelope(g,start,level,duration,attack,release,sustain);o.connect(g).connect(destination);o.start(start);o.stop(end+.03);this.cleanupGraph([o,g],end);return end;
     }
     bufferVoice(buffer,start,{level=.5,filter=null,duration=null,destination=this.input}={}){
-      const ctx=this.context,src=this.track(ctx.createBufferSource()),gain=this.track(ctx.createGain()),nodes=[src,gain];src.buffer=buffer;gain.gain.setValueAtTime(level,start);let out=src;
+      const ctx=this.context,src=this.track(ctx.createBufferSource()),gain=this.track(ctx.createGain()),nodes=[src,gain],playDuration=Math.max(.004,Math.min(buffer.duration,duration==null?buffer.duration:Number(duration))),end=start+playDuration,attack=Math.min(BUFFER_ATTACK,playDuration*.2),release=Math.min(BUFFER_RELEASE,playDuration*.25),fadeStart=Math.max(start+attack,end-release);src.buffer=buffer;gain.gain.setValueAtTime(0,start);gain.gain.linearRampToValueAtTime(level,start+attack);gain.gain.setValueAtTime(level,fadeStart);gain.gain.linearRampToValueAtTime(0,end);let out=src;
       if(filter){const f=this.track(ctx.createBiquadFilter());Object.assign(f,{type:filter.type||'lowpass'});f.frequency.setValueAtTime(filter.frequency||4200,start);f.Q.value=filter.Q||.7;out.connect(f);out=f;nodes.push(f)}
-      out.connect(gain).connect(destination);src.start(start);const end=start+(duration||buffer.duration);src.stop(end+.02);this.cleanupGraph(nodes,end);return end;
+      out.connect(gain).connect(destination);src.start(start);src.stop(end+.008);this.cleanupGraph(nodes,end+.008);return end;
     }
     noiseBuffer(seconds,seed){
       const sr=this.context.sampleRate,v=variant(seed,4),key=`noise:${seconds.toFixed(2)}:${v}`;return this.generatedBuffer(key,()=>{const n=Math.ceil(sr*seconds),pcm=new Float32Array(n),r=Kernel.rng(`noise:${v}`);for(let i=0;i<n;i++)pcm[i]=r()*2-1;return pcm})
     }
     piano(freq,start,duration,level,seed){
-      const sr=this.context.sampleRate,v=variant(seed,4),key=`piano:${Math.round(freq*100)}:${v}`,buffer=this.generatedBuffer(key,()=>Kernel.pianoAttackPCM(freq,sr,.40,v,clamp(level*1.2,.3,1))),register=clamp(Math.log2(Math.max(27.5,freq)/27.5)/7,0,1),B=.00005+.0015*register*register;let end=this.bufferVoice(buffer,start,{level:level*.78,filter:{type:'lowpass',frequency:Math.min(10400,1900+freq*9.5)}});
+      const sr=this.context.sampleRate,v=variant(seed,4),key=`piano:${Math.round(freq*100)}:${v}`,buffer=this.generatedBuffer(key,()=>Kernel.pianoAttackPCM(freq,sr,.40,v,.82)),register=clamp(Math.log2(Math.max(27.5,freq)/27.5)/7,0,1),B=.00005+.0015*register*register;let end=this.bufferVoice(buffer,start,{level:level*.78,filter:{type:'lowpass',frequency:Math.min(10400,1900+freq*9.5)}});
       for(let k=1;k<=5;k++){const ratio=k*Math.sqrt(1+B*k*k),amp=[0,.50,.19,.085,.038,.017][k]*Math.exp(-register*k*.08),detune=k===1?0:(k%2?.6:-.6);end=Math.max(end,this.oscillator(freq,start,duration,{ratio,level:level*amp,type:k<3?'sine':'triangle',detune,attack:.004,release:.25+k*.035,sustain:.09}))}return end;
     }
     guitar(freq,start,duration,level,seed){
@@ -160,7 +163,7 @@
     scheduleProgression(spec,start){let t=start,end=start;for(let i=0;i<spec.chords.length;i++){end=this.chord(spec.chords[i],t,spec.duration,spec.timbre,`${spec.seed}:p${i}`,.43);t+=spec.duration+.14}return end}
     scheduleValues(spec,start,cents=false){let t=start,end=start;for(let i=0;i<spec.values.length;i++){const note=cents?spec.root:spec.values[i],detune=cents?spec.values[i]:0;end=Math.max(end,this.note(note,t,spec.duration,spec.timbre,.44,detune,`${spec.seed}:v${i}`));t+=spec.duration+(spec.gap??.06)}return end}
     async play(spec){
-      await this.ensure();this.stop();const token=++this.token,start=this.context.currentTime+.075;let end=start;
+      await this.ensure();this.stop();const token=++this.token,start=this.context.currentTime+.075,bus=this.beginPlaybackBus();let end=start;
       if(spec.score?.events?.length&&spec.kind!=='rhythm')end=this.scheduleScore(spec,start);
       else if(spec.kind==='notes')end=this.scheduleNotes(spec,start);
       else if(spec.kind==='rhythm')end=this.scheduleRhythm(spec,start);
@@ -169,7 +172,7 @@
       else if(spec.kind==='melody')end=this.scheduleValues(spec,start,false);
       else if(spec.kind==='cents')end=this.scheduleValues(spec,start,true);
       else throw new Error(`Spécification audio inconnue: ${spec.kind}`);
-      return{token,start,end,duration:Math.max(0,end-start),cache:this.cache.stats()};
+      this.finishPlaybackBus(bus,end);return{token,start,end,duration:Math.max(0,end-start),cache:this.cache.stats()};
     }
   }
   return{PCMCache,AudioEngine,midiToHz,makeCurve,variant};

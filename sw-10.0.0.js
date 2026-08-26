@@ -1,5 +1,5 @@
 'use strict';
-const CACHE='earforge-10.0.0';
+const CACHE='earforge-pwa2-2cb2f459bb374c8d';
 const ROOT=new URL('./',self.location.href).href;
 const SCOPE_PATH=new URL('./',self.location.href).pathname;
 const INDEX_PATH=new URL('index.html',ROOT).pathname;
