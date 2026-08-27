@@ -1,7 +1,7 @@
 'use strict';
 (function(root,factory){
   const api=factory(
-    typeof module==='object'&&module.exports?require('./audio-kernel.js'):root.EarForgeAudioKernel
+    typeof module==='object'&&module.exports?require('./app-9.0.0-audio-kernel.js'):root.EarForgeAudioKernel
   );
   if(typeof module==='object'&&module.exports)module.exports=api;
   else root.EarForgeAudio=api;
@@ -163,7 +163,7 @@
     scheduleProgression(spec,start){let t=start,end=start;for(let i=0;i<spec.chords.length;i++){end=this.chord(spec.chords[i],t,spec.duration,spec.timbre,`${spec.seed}:p${i}`,.43);t+=spec.duration+.14}return end}
     scheduleValues(spec,start,cents=false){let t=start,end=start;for(let i=0;i<spec.values.length;i++){const note=cents?spec.root:spec.values[i],detune=cents?spec.values[i]:0;end=Math.max(end,this.note(note,t,spec.duration,spec.timbre,.44,detune,`${spec.seed}:v${i}`));t+=spec.duration+(spec.gap??.06)}return end}
     async play(spec){
-      await this.ensure();this.stop();const token=++this.token,start=this.context.currentTime+.075,bus=this.beginPlaybackBus();let end=start;
+      const requestToken=++this.token;await this.ensure();if(requestToken!==this.token){const error=new Error('Lecture annulée');error.code='EARFORGE_PLAY_CANCELLED';throw error}this.stop();const token=++this.token,start=this.context.currentTime+.075,bus=this.beginPlaybackBus();let end=start;
       if(spec.score?.events?.length&&spec.kind!=='rhythm')end=this.scheduleScore(spec,start);
       else if(spec.kind==='notes')end=this.scheduleNotes(spec,start);
       else if(spec.kind==='rhythm')end=this.scheduleRhythm(spec,start);
