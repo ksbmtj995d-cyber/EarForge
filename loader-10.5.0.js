@@ -3,14 +3,14 @@
   const packed={
     catalog:['00','01','02','03'],
     learning:['00','01','02','03','04','05','06'],
-    questions:['00','01','02','03'],
+    questions:['00','01a','01b','02','03'],
     audio:['00','01'],
     app:['00','01a','01b','02','03','04','05']
   };
   const loadDirect=src=>new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=()=>reject(new Error('Chargement impossible : '+src));document.head.append(s)});
   async function loadPacked(name){
     const names=packed[name];
-    const parts=await Promise.all(names.map(i=>fetch(`./payload/${name}/${i}.txt`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('Charge utile indisponible');return r.text()})));
+    const parts=await Promise.all(names.map(i=>fetch(`./payload/${name}/${i}.txt`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('Charge utile indisponible : '+name+'/'+i);return r.text()})));
     const raw=atob(parts.join(''));const bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
     if(typeof DecompressionStream!=='function')throw new Error('Ce navigateur ne prend pas en charge la décompression nécessaire.');
     const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
