@@ -1,11 +1,19 @@
 # EarForge
 
-EarForge est une application d’entraînement auditif progressive, adaptative et utilisable hors ligne.
+EarForge est un atelier d’entraînement auditif progressif, du premier mouvement mélodique aux progressions, basses et voix indépendantes.
 
-Elle permet de travailler les intervalles, accords, gammes, fonctions harmoniques, mélodies, justesse, expression musicale et rythme, des bases jusqu’aux exercices avancés.
+## Écouter dans de vrais contextes musicaux
 
-La Séance du jour adapte le parcours à votre progression. Le mode Mains libres permet une écoute continue. Le laboratoire avancé propose des mesures facultatives de pulsation, polyrythmie, justesse, mémoire mélodique, MIDI et harmonie.
+Les exercices font varier timbres, registres, articulations et tempos lorsque la réponse reste strictement la même. Les progressions proposent accords plaqués, basse puis accord, accord puis basse, alternance et arpèges. Les rythmes peuvent prendre des couleurs rock, funk, hip-hop, acoustiques, composées ou issues de traditions du monde.
 
-Les exercices peuvent varier tempo, timbre, registre, articulation, dynamique et contexte lorsque ces variations ne changent pas la bonne réponse. EarForge propose aussi des réglages d’accessibilité, une utilisation avec lecteur d’écran, des entrées tactiles et MIDI facultatives, l’export de la progression et le fonctionnement hors ligne après chargement des fichiers nécessaires.
+## Un parcours qui se construit dans le temps
 
-Application : https://ksbmtj995d-cyber.github.io/EarForge/
+La Séance du jour combine découverte bornée, pratique ciblée et révisions espacées. Le mode Mains libres permet une écoute continue. La progression distingue ce qui est ouvert, pratiqué, transféré et réellement consolidé.
+
+## Un laboratoire par besoin
+
+Quatre ateliers regroupent les mesures facultatives : rythme et temps, hauteur et justesse, mémoire et transcription, harmonie et voix. Une séance peut orienter vers l’outil pertinent sans imposer d’accessoire ni modifier artificiellement la maîtrise.
+
+## Accessible, local et hors ligne
+
+L’ordre de lecture, les noms de commandes, le clavier, le tactile, les contrastes renforcés et le mouvement réduit sont pris en charge. Le clavier MIDI reste facultatif et aucun microphone n’est utilisé. La progression demeure sur l’appareil et peut être exportée. Après un premier chargement complet, l’application fonctionne hors ligne.

@@ -1,0 +1,85 @@
+{
+  "version": "11.18.0",
+  "engine": "EarForge Performance Compiler 1.2.0",
+  "profiles": 68,
+  "families": [
+    "airjet",
+    "bowed",
+    "brass",
+    "double_reed",
+    "electro",
+    "free_reed",
+    "hammered",
+    "mallet",
+    "membrane",
+    "metal",
+    "plucked",
+    "reed",
+    "synth",
+    "vocal"
+  ],
+  "articulations": [
+    "accent",
+    "ghost",
+    "legato",
+    "marcato",
+    "neutral",
+    "portato",
+    "sforzando",
+    "staccatissimo",
+    "staccato",
+    "tenuto"
+  ],
+  "velocity_layers": 4,
+  "output_modes": [
+    "stereo",
+    "binaural-opt-in"
+  ],
+  "binaural_default": false,
+  "invariants": {
+    "no_new_note_by_default": true,
+    "absolute_pitch_preserved_by_default": true,
+    "octave_repair_requires_relative_contract": true,
+    "spatialization_requires_contract": true
+  },
+  "discovered_aliases": 24,
+  "files": [
+    "earforge-performance-aliases.js",
+    "earforge-performance-runtime.js"
+  ],
+  "runtime_component_version": "1.2.0",
+  "mapping_policy": {
+    "role_is_not_instrument": true,
+    "unknown_instrument": "passthrough_unprofiled",
+    "earforge_timbre_vocabulary": "complete_alias_table_61",
+    "approximation_scope": "carrier_shaping_not_instrument_authentication"
+  },
+  "application_version": "11.18.0",
+  "carrier_policy": "deep_modeled_expansion",
+  "exposed_carriers": 61,
+  "new_deep_carriers": [
+    "electric_guitar",
+    "clavinet",
+    "steel_guitar",
+    "violin",
+    "cello",
+    "double_bass",
+    "trumpet",
+    "trombone",
+    "french_horn",
+    "alto_sax",
+    "tenor_sax",
+    "accordion",
+    "harmonica",
+    "viola",
+    "piccolo",
+    "bass_clarinet",
+    "baritone_sax",
+    "bassoon",
+    "tuba",
+    "mandolin",
+    "banjo",
+    "harpsichord"
+  ],
+  "integration": "native_audio_contract_v1"
+}
