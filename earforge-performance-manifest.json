@@ -1,6 +1,6 @@
 {
-  "version": "11.18.0",
-  "engine": "EarForge Performance Compiler 1.2.0",
+  "version": "11.19.0",
+  "engine": "EarForge Performance Compiler 1.3.0",
   "profiles": 68,
   "families": [
     "airjet",
@@ -23,6 +23,7 @@
     "ghost",
     "legato",
     "marcato",
+    "muted",
     "neutral",
     "portato",
     "sforzando",
@@ -47,14 +48,14 @@
     "earforge-performance-aliases.js",
     "earforge-performance-runtime.js"
   ],
-  "runtime_component_version": "1.2.0",
+  "runtime_component_version": "1.3.0",
   "mapping_policy": {
     "role_is_not_instrument": true,
     "unknown_instrument": "passthrough_unprofiled",
     "earforge_timbre_vocabulary": "complete_alias_table_61",
     "approximation_scope": "carrier_shaping_not_instrument_authentication"
   },
-  "application_version": "11.18.0",
+  "application_version": "11.19.0",
   "carrier_policy": "deep_modeled_expansion",
   "exposed_carriers": 61,
   "new_deep_carriers": [

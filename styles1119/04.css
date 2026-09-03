@@ -1,0 +1,96 @@
+.bar,.progress-track{border:1px solid CanvasText;background:Canvas}
+  .bar span,.progress-track span{background:Highlight}
+  .choice.correct{outline:3px solid Highlight}
+  .choice.wrong{text-decoration:line-through}
+  .hero-media,.result-card::after{display:none}
+.lab-tool.recommended::after{color:HighlightText;background:Highlight}
+}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  button:active,button:hover,.hero-stamp{transform:none!important}
+}
+
+@media(prefers-reduced-transparency:reduce){
+  body{background:var(--bg)}
+  .hero-paper{display:none}
+  body::before,.hero-media::after{display:none}
+  .card,.home-hero,.lab-category,.action-card,.action-card.strong{background:var(--surface)}
+  .action-card,.action-card.strong{color:var(--text);border-color:var(--line)}
+  .action-card .action-meta,.action-card .action-kicker{color:var(--text)}
+}
+
+/* CSP-safe progress widths: the runtime applies one bounded class, never an inline style. */
+.bar span.p-0,.progress-track span.p-0{width:0%}
+.bar span.p-1,.progress-track span.p-1{width:1%}
+.bar span.p-2,.progress-track span.p-2{width:2%}
+.bar span.p-3,.progress-track span.p-3{width:3%}
+.bar span.p-4,.progress-track span.p-4{width:4%}
+.bar span.p-5,.progress-track span.p-5{width:5%}
+.bar span.p-6,.progress-track span.p-6{width:6%}
+.bar span.p-7,.progress-track span.p-7{width:7%}
+.bar span.p-8,.progress-track span.p-8{width:8%}
+.bar span.p-9,.progress-track span.p-9{width:9%}
+.bar span.p-10,.progress-track span.p-10{width:10%}
+.bar span.p-11,.progress-track span.p-11{width:11%}
+.bar span.p-12,.progress-track span.p-12{width:12%}
+.bar span.p-13,.progress-track span.p-13{width:13%}
+.bar span.p-14,.progress-track span.p-14{width:14%}
+.bar span.p-15,.progress-track span.p-15{width:15%}
+.bar span.p-16,.progress-track span.p-16{width:16%}
+.bar span.p-17,.progress-track span.p-17{width:17%}
+.bar span.p-18,.progress-track span.p-18{width:18%}
+.bar span.p-19,.progress-track span.p-19{width:19%}
+.bar span.p-20,.progress-track span.p-20{width:20%}
+.bar span.p-21,.progress-track span.p-21{width:21%}
+.bar span.p-22,.progress-track span.p-22{width:22%}
+.bar span.p-23,.progress-track span.p-23{width:23%}
+.bar span.p-24,.progress-track span.p-24{width:24%}
+.bar span.p-25,.progress-track span.p-25{width:25%}
+.bar span.p-26,.progress-track span.p-26{width:26%}
+.bar span.p-27,.progress-track span.p-27{width:27%}
+.bar span.p-28,.progress-track span.p-28{width:28%}
+.bar span.p-29,.progress-track span.p-29{width:29%}
+.bar span.p-30,.progress-track span.p-30{width:30%}
+.bar span.p-31,.progress-track span.p-31{width:31%}
+.bar span.p-32,.progress-track span.p-32{width:32%}
+.bar span.p-33,.progress-track span.p-33{width:33%}
+.bar span.p-34,.progress-track span.p-34{width:34%}
+.bar span.p-35,.progress-track span.p-35{width:35%}
+.bar span.p-36,.progress-track span.p-36{width:36%}
+.bar span.p-37,.progress-track span.p-37{width:37%}
+.bar span.p-38,.progress-track span.p-38{width:38%}
+.bar span.p-39,.progress-track span.p-39{width:39%}
+.bar span.p-40,.progress-track span.p-40{width:40%}
+.bar span.p-41,.progress-track span.p-41{width:41%}
+.bar span.p-42,.progress-track span.p-42{width:42%}
+.bar span.p-43,.progress-track span.p-43{width:43%}
+.bar span.p-44,.progress-track span.p-44{width:44%}
+.bar span.p-45,.progress-track span.p-45{width:45%}
+.bar span.p-46,.progress-track span.p-46{width:46%}
+.bar span.p-47,.progress-track span.p-47{width:47%}
+.bar span.p-48,.progress-track span.p-48{width:48%}
+.bar span.p-49,.progress-track span.p-49{width:49%}
+.bar span.p-50,.progress-track span.p-50{width:50%}
+.bar span.p-51,.progress-track span.p-51{width:51%}
+.bar span.p-52,.progress-track span.p-52{width:52%}
+.bar span.p-53,.progress-track span.p-53{width:53%}
+.bar span.p-54,.progress-track span.p-54{width:54%}
+.bar span.p-55,.progress-track span.p-55{width:55%}
+.bar span.p-56,.progress-track span.p-56{width:56%}
+.bar span.p-57,.progress-track span.p-57{width:57%}
+.bar span.p-58,.progress-track span.p-58{width:58%}
+.bar span.p-59,.progress-track span.p-59{width:59%}
+.bar span.p-60,.progress-track span.p-60{width:60%}
+.bar span.p-61,.progress-track span.p-61{width:61%}
+.bar span.p-62,.progress-track span.p-62{width:62%}
+.bar span.p-63,.progress-track span.p-63{width:63%}
+.bar span.p-64,.progress-track span.p-64{width:64%}
+.bar span.p-65,.progress-track span.p-65{width:65%}
+.bar span.p-66,.progress-track span.p-66{width:66%}
+.bar span.p-67,.progress-track span.p-67{width:67%}
+.bar span.p-68,.progress-track span.p-68{width:68%}
+.bar span.p-69,.progress-track span.p-69{width:69%}
+.bar span.p-70,.progress-track span.p-70{width:70%}
+.bar span.p-71,.progress-track span.p-71{width:71%}
+.bar span.p-72,.progress-track span.p-72{width:72%}
