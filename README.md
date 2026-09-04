@@ -12,8 +12,12 @@ La Séance du jour combine découverte bornée, pratique ciblée et révisions e
 
 ## Un laboratoire par besoin
 
-Quatre ateliers regroupent les mesures facultatives : rythme et temps, hauteur et justesse, mémoire et transcription, harmonie et voix. Une séance peut orienter vers l’outil pertinent sans imposer d’accessoire ni modifier artificiellement la maîtrise.
+Six catégories regroupent les mesures facultatives : généralisation, espace auditif, rythme et temps, hauteur et justesse, mémoire et transcription, harmonie et voix. Une séance peut orienter vers l’outil pertinent sans imposer d’accessoire ni modifier artificiellement la maîtrise.
 
 ## Accessible, local et hors ligne
 
 L’ordre de lecture, les noms de commandes, le clavier, le tactile, les contrastes renforcés et le mouvement réduit sont pris en charge. Le clavier MIDI reste facultatif et aucun microphone n’est utilisé. La progression demeure sur l’appareil et peut être exportée. Après un premier chargement complet, l’application fonctionne hors ligne.
+
+
+## Frontières actives
+Probes de transfert hors renderer, seuil spatial HRTF, tempo expressif continu, rappel libre clavier/braille et mesure de latence d’interface. Ces mesures restent séparées de la maîtrise quotidienne et ne revendiquent aucune validation humaine externe tant que les données correspondantes ne sont pas présentes.

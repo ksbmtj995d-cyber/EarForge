@@ -1,5 +1,5 @@
 {
-  "version": "11.19.0",
+  "version": "11.24.1",
   "engine": "EarForge Performance Compiler 1.3.0",
   "profiles": 68,
   "families": [
@@ -55,7 +55,7 @@
     "earforge_timbre_vocabulary": "complete_alias_table_61",
     "approximation_scope": "carrier_shaping_not_instrument_authentication"
   },
-  "application_version": "11.19.0",
+  "application_version": "11.24.1",
   "carrier_policy": "deep_modeled_expansion",
   "exposed_carriers": 61,
   "new_deep_carriers": [
