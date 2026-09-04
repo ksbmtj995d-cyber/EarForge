@@ -1,0 +1,119 @@
+name: Publish EarForge 11.24.1
+on:
+  push:
+    paths:
+      - .github/workflows/deploy-earforge-11241.yml
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Assemble and publish 11.24.1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          SITE="$RUNNER_TEMP/site"
+          mkdir -p "$SITE"
+          api="https://api.github.com/repos/$REPO"
+          fetch_blob() {
+            local sha="$1" out="$2"
+            mkdir -p "$(dirname "$out")"
+            curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H 'X-GitHub-Api-Version: 2022-11-28' "$api/git/blobs/$sha" \
+              | jq -r '.content' | tr -d '\n' | base64 -d > "$out"
+          }
+          fetch_tree() {
+            local tree="$1" prefix="$2"
+            curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H 'X-GitHub-Api-Version: 2022-11-28' "$api/git/trees/$tree?recursive=1" \
+              | jq -r '.tree[] | select(.type=="blob") | [.path,.sha] | @tsv' \
+              | while IFS=$'\t' read -r path sha; do fetch_blob "$sha" "$SITE/$prefix/$path"; done
+          }
+          # Exact 11.24.1 pedagogical payload already verified in Git.
+          fetch_tree 24e87effeebe65875066d5f4524e7d99153203c5 payload
+          # Direct runtime fragments; split transport concatenates to the original bytes.
+          fetch_blob 102df5403465227eeb312d9b3ebb4d3c6dcfde69 "$SITE/payload/direct11241/audioKernel/00.txt"
+          fetch_blob 2f6721f916d48148ee21fb467597c3786fe52646 "$SITE/payload/direct11241/audioKernel/01.txt"
+          fetch_blob d058ac548d35f1d338cf97c074e9fe86f5b6671c "$SITE/payload/direct11241/frontiers/00.txt"
+          fetch_blob d9760fa9d090ba5e83976192388b5039b9cdb984 "$SITE/payload/direct11241/frontiers/01.txt"
+          fetch_blob b1107e603fa61153e58a4edc641e28e487551ce3 "$SITE/payload/direct11241/frontiers/02.txt"
+          fetch_blob 27d314c430c5e0955ace99b591836e3f8e4c260b "$SITE/payload/direct11241/frontiers/03.txt"
+          fetch_blob 9bbce0d2960e315dcc9a1d403a94fadbe62d1b2b "$SITE/payload/direct11241/labs/00.txt"
+          fetch_blob 9311979e51eae64df77e5142673b333916ff1832 "$SITE/payload/direct11241/labs/01a.txt"
+          fetch_blob e44afe06ea92c183785e8a2501419033ead3ba04 "$SITE/payload/direct11241/labs/01b.txt"
+          fetch_blob e69ec733955596cc650392a3fcab2aab49e01219 "$SITE/payload/direct11241/labs/02.txt"
+          fetch_blob 210fd99bf27ecf2c87a7e1940bc006a5205f189c "$SITE/payload/direct11241/perfRuntime/00a.txt"
+          fetch_blob 2998d485ee5e924b7ee1ebd6dd48298135b567a5 "$SITE/payload/direct11241/perfRuntime/00b.txt"
+          fetch_blob 6955455e7a7b850b2c07f35975944232c95de92e "$SITE/payload/direct11241/perfRuntime/01a.txt"
+          fetch_blob 60af6817284720c32c6eb9d7aa0a66193761615b "$SITE/payload/direct11241/perfRuntime/01b.txt"
+          fetch_blob e80d67d2711db55e47a6959e11bc1a722b3851d7 "$SITE/payload/direct11241/perfRuntime/02.txt"
+          fetch_blob 77cc6a472625bdcc12129760f61d7eb9f0882624 "$SITE/payload/direct11241/perfRuntime/03.txt"
+          # Static/runtime root files.
+          fetch_blob ed485e9a4e303d26be36c7c6e9ce797873915764 "$SITE/README.md"
+          fetch_blob fd684aedcb5d19019c4c287f48d0bcf0d016c9e9 "$SITE/LICENSE"
+          fetch_blob ca55cbc8c1d0937557fca99319b8e48ba854334f "$SITE/apple-touch-icon.png"
+          fetch_blob 002081dfe5c1fdebde5a9fd803cf4dcdced1ee75 "$SITE/icon-192.png"
+          fetch_blob 75b68f4eb3fd265a043c86d3aebc930695741716 "$SITE/icon-512.png"
+          fetch_blob e4aaf248510c89a9317f77972f2b225f42db6c0c "$SITE/maskable-512.png"
+          fetch_blob d381f598847a6fa5cd2f90f2830f6a9fe0a4b166 "$SITE/manifest.webmanifest"
+          fetch_blob 421eb22d69b977dcb453adbd355f7b848597b639 "$SITE/earforge-performance-aliases.js"
+          fetch_blob 98f4138311aeb0455f8b63b9fa5c264a82a8c118 "$SITE/earforge-performance-manifest.json"
+          fetch_blob 0164e80ffcd989492ffa88ed1abad04ef7d5b2b7 "$SITE/probe-renderers.js"
+          fetch_blob af798a3a05a929c229574a10fafb4cd01a2d27de "$SITE/release.json"
+          fetch_blob 622e8d40045d7417297f6af20e8584548af26884 "$SITE/storage.js"
+          fetch_blob cfa08032205b849178d1a8ae2258258cc78dcf10 "$SITE/loader.js"
+          # CSS exact shards.
+          for pair in \
+            '00 74485863042ce95ea77e3e87beb7ad887cf71e13' \
+            '01 69dab466ac01f63707e6517c12efc9237c0dde40' \
+            '02 b72fec3a70cdfb7f1257214521ceab4b0b0fe640' \
+            '03 77dbef3c5b49704f0d547066c40c12c06da9f0c4' \
+            '04 d922ab2c3d967f301d9a7afd2cf99d5abc5c47b1'; do
+              set -- $pair; fetch_blob "$2" "$SITE/styles11241/$1.css"
+          done
+          cat > "$SITE/styles.css" <<'EOF'
+          @import url('./styles11241/00.css?ef=11241');
+          @import url('./styles11241/01.css?ef=11241');
+          @import url('./styles11241/02.css?ef=11241');
+          @import url('./styles11241/03.css?ef=11241');
+          @import url('./styles11241/04.css?ef=11241');
+          EOF
+          cat > "$SITE/boot.js" <<'EOF'
+          'use strict';
+          (()=>{const REV='11241';const nf=globalThis.fetch.bind(globalThis);const map={
+          '/payload/questions/08.txt':['08a.txt','08b.txt'],'/payload/questions/09.txt':['09a.txt','09b.txt'],
+          '/payload/direct11241/labs/01.txt':['01a.txt','01b.txt'],
+          '/payload/direct11241/perfRuntime/00.txt':['00a.txt','00b.txt'],
+          '/payload/direct11241/perfRuntime/01.txt':['01a.txt','01b.txt']};
+          globalThis.fetch=async(input,init)=>{try{const raw=typeof input==='string'||input instanceof URL?String(input):input.url;const u=new URL(raw,document.baseURI);let key=Object.keys(map).find(k=>u.pathname.endsWith(k));if(key){const base=u.href.slice(0,u.href.lastIndexOf('/')+1);const texts=await Promise.all(map[key].map(p=>{const x=new URL(p,base);x.searchParams.set('ef',REV);return nf(x.href,{...init,cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Ressource '+p);return r.text()})}));return new Response(texts.join(''),{status:200,headers:{'content-type':'text/plain;charset=utf-8'}})}if(u.origin===location.origin)u.searchParams.set('ef',REV);return nf(u.href,init)}catch(_){return nf(input,init)}};
+          if('serviceWorker'in navigator)navigator.serviceWorker.register(new URL('sw.js?ef='+REV,document.baseURI).href,{scope:'./',updateViaCache:'none'}).catch(()=>{});
+          const s=document.createElement('script');s.src='./loader.js?ef='+REV;s.defer=true;document.head.append(s);})();
+          EOF
+          cat > "$SITE/sw.js" <<'EOF'
+          'use strict';
+          const CACHE='earforge-11-24-1-v3',SCOPE=new URL('./',self.location.href).pathname;
+          self.addEventListener('install',e=>e.waitUntil(self.skipWaiting()));
+          self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x.startsWith('earforge-')&&x!==CACHE).map(x=>caches.delete(x)))).then(()=>self.clients.claim())));
+          self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;const u=new URL(e.request.url);if(u.origin!==self.location.origin||!u.pathname.startsWith(SCOPE))return;e.respondWith(fetch(e.request,{cache:'no-store'}).then(r=>{if(r&&r.ok)caches.open(CACHE).then(c=>c.put(e.request,r.clone()));return r}).catch(()=>caches.match(e.request)))});
+          EOF
+          cat > "$SITE/index.html" <<'EOF'
+          <!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#171511"><meta name="color-scheme" content="dark light"><meta name="description" content="Entraînement auditif progressif, accessible, privé et utilisable hors ligne."><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' blob:; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"><meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), serial=()"><link rel="manifest" href="./manifest.webmanifest?ef=11241"><link rel="apple-touch-icon" href="./apple-touch-icon.png"><link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png"><link rel="stylesheet" href="./styles.css?ef=11241"><title>EarForge — Atelier d’écoute</title></head><body><main id="app" class="app-shell"></main><div id="announcement" class="visually-hidden" aria-live="polite" aria-atomic="true"></div><noscript>JavaScript est nécessaire pour produire les exercices audio.</noscript><script src="./boot.js?ef=11241" defer></script></body></html>
+          EOF
+          touch "$SITE/.nojekyll"
+          node --check "$SITE/boot.js"
+          node --check "$SITE/loader.js"
+          node --check "$SITE/sw.js"
+          # Validate every blob in the 11.24.1 release tree is present; loader performs source SHA-256 checks at runtime.
+          BASE=$(git rev-parse HEAD^)
+          rsync -a --delete --exclude='.git' "$SITE/" "$GITHUB_WORKSPACE/"
+          git config user.name 'ksbmtj995d-cyber'
+          git config user.email 'ksbmtj995d@privaterelay.appleid.com'
+          git add -A
+          TREE=$(git write-tree)
+          COMMIT=$(printf '%s\n' 'EarForge 11.24.1' | git commit-tree "$TREE" -p "$BASE")
+          git push --force origin "$COMMIT:refs/heads/gh-pages"
