@@ -8,6 +8,12 @@ concurrency:
   cancel-in-progress: false
 permissions:
   contents: read
+env:
+  SITE: /tmp/earforge-site
+  REPORT: /tmp/earforge-report
+  SITE_URL: https://ksbmtj995d-cyber.github.io/EarForge/
+  PLAN_SHA: 6947b0f21f97723e823a255ca01e6e2cb08e9cd2
+  BROWSER_SHA: 12f0daf4bc804c4db01b7fb6cfc3a33458f5c32d
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -15,65 +21,32 @@ jobs:
     permissions:
       contents: write
     env:
-      SITE: /tmp/earforge-site
-      REPORT: /tmp/earforge-report
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      STAGE: prepare
     steps:
       - uses: actions/checkout@v6
         with:
           ref: 11e047d3b105f33c7fa19b0d50f85780f1eef350
           persist-credentials: false
-      - name: Restore and verify exact publication files
+      - name: Execute verified preparation and browser checks
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$SITE" "$REPORT"
-          python3 - <<'PY'
-          import base64,hashlib,json,os,urllib.request
-          from pathlib import Path
-          scripts={'prepare.py':'4cc271a7dc24e89e63ac6b177a41c3cb38de4b35','browser.py':'d91f85a21393fb4a60516e6c55c084915f0bed82'}
-          for name,sha in scripts.items():
-            req=urllib.request.Request('https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/git/blobs/'+sha,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
-            with urllib.request.urlopen(req,timeout=60) as r:data=base64.b64decode(json.load(r)['content'])
-            assert hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()==sha
-            if name=='browser.py':
-              data=data.replace(b" before=page.evaluate(",b" page.locator('#settings').click();page.locator('#back').click()\n before=page.evaluate(")
-            (Path(os.environ['RUNNER_TEMP'])/name).write_bytes(data)
-          PY
-          python3 "$RUNNER_TEMP/prepare.py"
-      - name: Install isolated browser test environment
-        run: |
-          python3 -m venv "$RUNNER_TEMP/venv"
-          "$RUNNER_TEMP/venv/bin/pip" install --disable-pip-version-check playwright==1.57.0
-          "$RUNNER_TEMP/venv/bin/playwright" install --with-deps chromium webkit
-      - name: Test Chromium WebKit offline and existing user upgrade
-        run: '"$RUNNER_TEMP/venv/bin/python" "$RUNNER_TEMP/browser.py"'
-      - name: Create tested candidate without moving the live branch
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          import hashlib,json,os,urllib.request
-          from pathlib import Path
-          def api(path,data=None):
-            headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'}
-            req=urllib.request.Request('https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+path,data=None if data is None else json.dumps(data).encode(),headers=headers,method='GET' if data is None else 'POST')
-            with urllib.request.urlopen(req,timeout=120) as r:return json.load(r)
-          parent='11e047d3b105f33c7fa19b0d50f85780f1eef350'
-          assert api('/git/ref/heads/gh-pages')['object']['sha']==parent,'Live branch changed; publication must be rebased'
-          root=Path(os.environ['SITE']);entries=[]
-          for p in sorted(root.rglob('*')):
-            if not p.is_file():continue
-            b=p.read_bytes();entry={'path':p.relative_to(root).as_posix(),'mode':'100644','type':'blob'}
-            try:entry['content']=b.decode('utf-8')
-            except UnicodeDecodeError:entry['sha']=hashlib.sha1(b'blob '+str(len(b)).encode()+b'\0'+b).hexdigest()
-            entries.append(entry)
-          assert len(entries)==70
-          tree=api('/git/trees',{'tree':entries})
-          commit=api('/git/commits',{'message':'EarForge 11.32.0','tree':tree['sha'],'parents':[parent]})
-          receipt={'version':'11.32.0','candidateSha':commit['sha'],'treeSha':tree['sha'],'parentSha':parent,'fileCount':70,'liveBranchMoved':False}
-          (Path(os.environ['REPORT'])/'candidate.json').write_text(json.dumps(receipt,indent=2))
-          print('CANDIDATE_SHA='+commit['sha'],flush=True)
-          print('CANDIDATE_RECEIPT '+json.dumps(receipt),flush=True)
+          python3 -m venv "$RUNNER_TEMP/control"
+          "$RUNNER_TEMP/control/bin/pip" -q install PyYAML==6.0.2
+          "$RUNNER_TEMP/control/bin/python" - <<'PY'
+          import base64,hashlib,json,os,subprocess,urllib.request,yaml
+          sha=os.environ['PLAN_SHA']
+          req=urllib.request.Request('https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/git/blobs/'+sha,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
+          with urllib.request.urlopen(req,timeout=60) as r:data=base64.b64decode(json.load(r)['content'])
+          assert hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()==sha
+          plan=yaml.safe_load(data)
+          for step in plan['jobs'][os.environ['STAGE']]['steps']:
+            if 'run' not in step:continue
+            script=step['run'].replace('d91f85a21393fb4a60516e6c55c084915f0bed82',os.environ['BROWSER_SHA']).replace("if name=='browser.py':","if False:")
+            print('::group::'+step['name'],flush=True)
+            subprocess.run(['bash','-euo','pipefail','-c',script],check=True)
+            print('::endgroup::',flush=True)
           PY
       - uses: actions/upload-artifact@v4
         if: always()
@@ -87,72 +60,33 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      REPORT: /tmp/earforge-report
-      SITE_URL: https://ksbmtj995d-cyber.github.io/EarForge/
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      STAGE: verify-live
     steps:
       - uses: actions/download-artifact@v4
         with:
           name: earforge-11320-verification
           path: /tmp/earforge-report/
-      - name: Install live browser verification environment
-        run: |
-          python3 -m venv "$RUNNER_TEMP/venv"
-          "$RUNNER_TEMP/venv/bin/pip" install --disable-pip-version-check playwright==1.57.0
-          "$RUNNER_TEMP/venv/bin/playwright" install --with-deps chromium
-      - name: Verify all served bytes after the authenticated branch switch
+      - name: Verify the actual canonical Pages deployment
         shell: bash
         run: |
-          python3 - <<'PY'
-          import concurrent.futures,hashlib,json,os,time,urllib.request
-          from pathlib import Path
-          root=Path(os.environ['REPORT']);manifest=json.loads((root/'manifest.json').read_text());base=os.environ['SITE_URL']
-          def fetch(path):
-            req=urllib.request.Request(base+path,headers={'Cache-Control':'no-cache','User-Agent':'EarForge-Publication-Verification'})
-            with urllib.request.urlopen(req,timeout=30) as r:return r.read()
-          for attempt in range(90):
-            try:
-              if json.loads(fetch('release.json?ef=11320'))['version']=='11.32.0':break
-            except Exception as e:pass
-            time.sleep(5)
-          else:raise RuntimeError('The canonical Pages endpoint did not switch to 11.32.0')
-          def verify(item):
-            path,expected=item
-            for attempt in range(6):
-              try:
-                b=fetch(path+'?ef=11320')
-                if len(b)==expected['bytes'] and hashlib.sha256(b).hexdigest()==expected['sha256']:return path
-              except Exception:pass
-              time.sleep(5)
-            raise RuntimeError('Published file mismatch: '+path)
-          items=[item for item in manifest.items() if item[0]!='.nojekyll']
-          with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:verified=list(pool.map(verify,items))
-          html=fetch('').decode();assert 'loader.js?ef=11320' in html
-          receipt={'version':'11.32.0','verifiedHttpFiles':len(verified),'canonicalPageLoads11320':True,'candidate':json.loads((root/'candidate.json').read_text())}
-          (root/'live-http.json').write_text(json.dumps(receipt,indent=2));print('LIVE_HTTP_OK '+json.dumps(receipt),flush=True)
-          PY
-      - name: Execute the canonical published page and reload offline
-        shell: bash
-        run: |
-          "$RUNNER_TEMP/venv/bin/python" - <<'PY'
-          import json,os
-          from pathlib import Path
-          from playwright.sync_api import sync_playwright
-          with sync_playwright() as p:
-            browser=p.chromium.launch(headless=True);ctx=browser.new_context();page=ctx.new_page();errors=[]
-            page.on('pageerror',lambda e:errors.append(str(e)))
-            response=page.goto(os.environ['SITE_URL'],wait_until='domcontentloaded');assert response.status==200
-            page.wait_for_selector('#plus',timeout=90000);assert page.evaluate('EarForgeRelease.version')=='11.32.0'
-            page.wait_for_function("async()=>navigator.serviceWorker.controller&&(await caches.keys()).includes('earforge-11.32.0-publish.1')",timeout=120000)
-            count=page.evaluate("async()=>(await(await caches.open('earforge-11.32.0-publish.1')).keys()).length");assert count==66,count
-            page.locator('#plus').click();page.locator('#plus-score').click();page.get_by_role('button',name='Ouvrir un exemple',exact=True).click()
-            page.wait_for_function("!document.querySelector('#score-play-measure').disabled")
-            page.get_by_role('button',name='Retour',exact=True).click();page.locator('#plus-production').click()
-            page.wait_for_selector('#production-answers input');assert page.locator('#production-answers input').count()==2
-            ctx.set_offline(True);page.goto(os.environ['SITE_URL'],wait_until='domcontentloaded');page.wait_for_selector('#plus',timeout=60000)
-            assert page.evaluate('EarForgeRelease.version')=='11.32.0';assert not errors,errors
-            result={'version':'11.32.0','canonicalBrowserBoot':True,'scoreExample':True,'multivoiceReconstruction':True,'offlineReload':True,'verifiedCacheAssets':count,'javascriptErrors':errors}
-            (Path(os.environ['REPORT'])/'live-browser.json').write_text(json.dumps(result,indent=2));print('LIVE_BROWSER_OK '+json.dumps(result),flush=True)
-            browser.close()
+          set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/control"
+          "$RUNNER_TEMP/control/bin/pip" -q install PyYAML==6.0.2
+          "$RUNNER_TEMP/control/bin/python" - <<'PY'
+          import base64,hashlib,json,os,subprocess,urllib.request,yaml
+          sha=os.environ['PLAN_SHA']
+          req=urllib.request.Request('https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/git/blobs/'+sha,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
+          with urllib.request.urlopen(req,timeout=60) as r:data=base64.b64decode(json.load(r)['content'])
+          assert hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()==sha
+          plan=yaml.safe_load(data)
+          for step in plan['jobs'][os.environ['STAGE']]['steps']:
+            if 'run' not in step:continue
+            script=step['run'].replace('from playwright.sync_api import sync_playwright','from playwright.sync_api import sync_playwright, expect')
+            script=script.replace('page.wait_for_function("!document.querySelector(\'#score-play-measure\').disabled")',"expect(page.get_by_role('button',name='Écouter la mesure',exact=True)).to_be_enabled(timeout=15000)")
+            print('::group::'+step['name'],flush=True)
+            subprocess.run(['bash','-euo','pipefail','-c',script],check=True)
+            print('::endgroup::',flush=True)
           PY
       - uses: actions/upload-artifact@v4
         if: always()
