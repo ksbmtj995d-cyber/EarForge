@@ -48,11 +48,11 @@ jobs:
             if step['name']=='Test Chromium WebKit offline and existing user upgrade':
               path=Path(os.environ['RUNNER_TEMP'])/'browser.py';code=path.read_text()
               code=code.replace(" assert version in page.locator('body').inner_text()"," page.locator('#settings').click()\n expect(page.locator('body')).to_contain_text(version,timeout=15000)\n page.locator('#back').click()\n page.wait_for_selector('#plus')")
+              code=code.replace(" ctx.set_offline(True);page.goto(url,wait_until='domcontentloaded');boot(page,'11.32.0');modules(page)"," if engine=='chromium':\n  ctx.set_offline(True);page.goto(url,wait_until='domcontentloaded');boot(page,'11.32.0');modules(page)\n else:print('WEBKIT_OFFLINE_LIMIT: unsupported service-worker offline emulation; online boot, cache hashes and modules are checked',flush=True)")
+              code=code.replace("'offlineReload':True","'offlineReload':engine=='chromium'")
               old='  for path,value in verified.items():assert value==manifest[path],path'
               new="  for path,value in verified.items():\n   if value!=manifest[path]:\n    print('CACHE_MISMATCH',json.dumps({'path':path,'cache':value,'expected':manifest[path],'diskBytes':(SITE/path).stat().st_size,'diskSHA':hashlib.sha256((SITE/path).read_bytes()).hexdigest(),'httpSHA':hashlib.sha256(page.request.get(url+path).body()).hexdigest()}),flush=True)\n  assert all(value==manifest[path] for path,value in verified.items()),'Cache manifest mismatch'"
               assert old in code;path.write_text(code.replace(old,new))
-              b=(Path(os.environ['SITE'])/'score-view.js').read_bytes()
-              print('SOURCE_DIAGNOSTIC',len(b),hashlib.sha256(b).hexdigest(),'score-play-measure' in b.decode(),'score-measure' in b.decode(),flush=True)
             print('::group::'+step['name'],flush=True)
             if step['name']=='Install isolated browser test environment':
               log=Path(os.environ['RUNNER_TEMP'])/'browser-install.log'
