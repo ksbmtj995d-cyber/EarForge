@@ -13,7 +13,7 @@ env:
   REPORT: /tmp/earforge-report
   SITE_URL: https://ksbmtj995d-cyber.github.io/EarForge/
   PLAN_SHA: 6947b0f21f97723e823a255ca01e6e2cb08e9cd2
-  BROWSER_SHA: 12f0daf4bc804c4db01b7fb6cfc3a33458f5c32d
+  BROWSER_SHA: 062e4a7b4795e0333fd7f23ddd801ff2d8a39e2b
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -75,15 +75,18 @@ jobs:
           "$RUNNER_TEMP/control/bin/pip" -q install PyYAML==6.0.2
           "$RUNNER_TEMP/control/bin/python" - <<'PY'
           import base64,hashlib,json,os,subprocess,urllib.request,yaml
-          sha=os.environ['PLAN_SHA']
-          req=urllib.request.Request('https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/git/blobs/'+sha,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
-          with urllib.request.urlopen(req,timeout=60) as r:data=base64.b64decode(json.load(r)['content'])
-          assert hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()==sha
-          plan=yaml.safe_load(data)
+          from pathlib import Path
+          def blob(sha):
+            req=urllib.request.Request('https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/git/blobs/'+sha,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
+            with urllib.request.urlopen(req,timeout=60) as r:data=base64.b64decode(json.load(r)['content'])
+            assert hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()==sha
+            return data
+          plan=yaml.safe_load(blob(os.environ['PLAN_SHA']))
+          path=Path(os.environ['RUNNER_TEMP'])/'live-browser.py';path.write_bytes(blob(os.environ['BROWSER_SHA']))
           for step in plan['jobs'][os.environ['STAGE']]['steps']:
             if 'run' not in step:continue
-            script=step['run'].replace('from playwright.sync_api import sync_playwright','from playwright.sync_api import sync_playwright, expect')
-            script=script.replace('page.wait_for_function("!document.querySelector(\'#score-play-measure\').disabled")',"expect(page.get_by_role('button',name='Écouter la mesure',exact=True)).to_be_enabled(timeout=15000)")
+            script=step['run']
+            if step['name']=='Execute the canonical published page and reload offline':script='"$RUNNER_TEMP/venv/bin/python" "$RUNNER_TEMP/live-browser.py" --live'
             print('::group::'+step['name'],flush=True)
             subprocess.run(['bash','-euo','pipefail','-c',script],check=True)
             print('::endgroup::',flush=True)
