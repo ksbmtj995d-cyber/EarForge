@@ -13,7 +13,7 @@ env:
   REPORT: /tmp/earforge-report
   SITE_URL: https://ksbmtj995d-cyber.github.io/EarForge/
   PLAN_SHA: 6947b0f21f97723e823a255ca01e6e2cb08e9cd2
-  BROWSER_SHA: 062e4a7b4795e0333fd7f23ddd801ff2d8a39e2b
+  BROWSER_SHA: f16d972c74be16e0926c3238cc74514272bc87ab
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -22,7 +22,6 @@ jobs:
       contents: write
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      STAGE: prepare
     steps:
       - uses: actions/checkout@v6
         with:
@@ -42,17 +41,9 @@ jobs:
           with urllib.request.urlopen(req,timeout=60) as r:data=base64.b64decode(json.load(r)['content'])
           assert hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()==sha
           plan=yaml.safe_load(data)
-          for step in plan['jobs'][os.environ['STAGE']]['steps']:
+          for step in plan['jobs']['prepare']['steps']:
             if 'run' not in step:continue
             script=step['run'].replace('d91f85a21393fb4a60516e6c55c084915f0bed82',os.environ['BROWSER_SHA']).replace("if name=='browser.py':","if False:")
-            if step['name']=='Test Chromium WebKit offline and existing user upgrade':
-              path=Path(os.environ['RUNNER_TEMP'])/'browser.py';code=path.read_text()
-              code=code.replace(" assert version in page.locator('body').inner_text()"," page.locator('#settings').click()\n expect(page.locator('body')).to_contain_text(version,timeout=15000)\n page.locator('#back').click()\n page.wait_for_selector('#plus')")
-              code=code.replace(" ctx.set_offline(True);page.goto(url,wait_until='domcontentloaded');boot(page,'11.32.0');modules(page)"," if engine=='chromium':\n  ctx.set_offline(True);page.goto(url,wait_until='domcontentloaded');boot(page,'11.32.0');modules(page)\n else:print('WEBKIT_OFFLINE_LIMIT: unsupported service-worker offline emulation; online boot, cache hashes and modules are checked',flush=True)")
-              code=code.replace("'offlineReload':True","'offlineReload':engine=='chromium'")
-              old='  for path,value in verified.items():assert value==manifest[path],path'
-              new="  for path,value in verified.items():\n   if value!=manifest[path]:\n    print('CACHE_MISMATCH',json.dumps({'path':path,'cache':value,'expected':manifest[path],'diskBytes':(SITE/path).stat().st_size,'diskSHA':hashlib.sha256((SITE/path).read_bytes()).hexdigest(),'httpSHA':hashlib.sha256(page.request.get(url+path).body()).hexdigest()}),flush=True)\n  assert all(value==manifest[path] for path,value in verified.items()),'Cache manifest mismatch'"
-              assert old in code;path.write_text(code.replace(old,new))
             print('::group::'+step['name'],flush=True)
             if step['name']=='Install isolated browser test environment':
               log=Path(os.environ['RUNNER_TEMP'])/'browser-install.log'
@@ -75,7 +66,6 @@ jobs:
     timeout-minutes: 20
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      STAGE: verify-live
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -96,9 +86,8 @@ jobs:
             assert hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()==sha
             return data
           plan=yaml.safe_load(blob(os.environ['PLAN_SHA']))
-          code=blob(os.environ['BROWSER_SHA']).decode().replace(" assert version in page.locator('body').inner_text()"," page.locator('#settings').click()\n expect(page.locator('body')).to_contain_text(version,timeout=15000)\n page.locator('#back').click()\n page.wait_for_selector('#plus')")
-          path=Path(os.environ['RUNNER_TEMP'])/'live-browser.py';path.write_text(code)
-          for step in plan['jobs'][os.environ['STAGE']]['steps']:
+          path=Path(os.environ['RUNNER_TEMP'])/'live-browser.py';path.write_bytes(blob(os.environ['BROWSER_SHA']))
+          for step in plan['jobs']['verify-live']['steps']:
             if 'run' not in step:continue
             script=step['run']
             if step['name']=='Execute the canonical published page and reload offline':script='"$RUNNER_TEMP/venv/bin/python" "$RUNNER_TEMP/live-browser.py" --live'
