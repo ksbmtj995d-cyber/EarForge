@@ -36,6 +36,7 @@ jobs:
           "$RUNNER_TEMP/control/bin/pip" -q install PyYAML==6.0.2
           "$RUNNER_TEMP/control/bin/python" - <<'PY'
           import base64,hashlib,json,os,subprocess,urllib.request,yaml
+          from pathlib import Path
           sha=os.environ['PLAN_SHA']
           req=urllib.request.Request('https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/git/blobs/'+sha,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
           with urllib.request.urlopen(req,timeout=60) as r:data=base64.b64decode(json.load(r)['content'])
@@ -44,8 +45,18 @@ jobs:
           for step in plan['jobs'][os.environ['STAGE']]['steps']:
             if 'run' not in step:continue
             script=step['run'].replace('d91f85a21393fb4a60516e6c55c084915f0bed82',os.environ['BROWSER_SHA']).replace("if name=='browser.py':","if False:")
+            if step['name']=='Test Chromium WebKit offline and existing user upgrade':
+              path=Path(os.environ['RUNNER_TEMP'])/'browser.py';code=path.read_text()
+              old='  for path,value in verified.items():assert value==manifest[path],path'
+              new="  for path,value in verified.items():\n   if value!=manifest[path]:\n    print('CACHE_MISMATCH',json.dumps({'path':path,'cache':value,'expected':manifest[path],'diskBytes':(SITE/path).stat().st_size,'diskSHA':hashlib.sha256((SITE/path).read_bytes()).hexdigest(),'httpSHA':hashlib.sha256(page.request.get(url+path).body()).hexdigest()}),flush=True)\n  assert all(value==manifest[path] for path,value in verified.items()),'Cache manifest mismatch'"
+              assert old in code;path.write_text(code.replace(old,new))
             print('::group::'+step['name'],flush=True)
-            subprocess.run(['bash','-euo','pipefail','-c',script],check=True)
+            if step['name']=='Install isolated browser test environment':
+              log=Path(os.environ['RUNNER_TEMP'])/'browser-install.log'
+              with log.open('w') as out:r=subprocess.run(['bash','-euo','pipefail','-c',script],stdout=out,stderr=subprocess.STDOUT)
+              if r.returncode:print(log.read_text()[-10000:],flush=True)
+              r.check_returncode();print('Browser dependencies installed',flush=True)
+            else:subprocess.run(['bash','-euo','pipefail','-c',script],check=True)
             print('::endgroup::',flush=True)
           PY
       - uses: actions/upload-artifact@v4
@@ -88,7 +99,12 @@ jobs:
             script=step['run']
             if step['name']=='Execute the canonical published page and reload offline':script='"$RUNNER_TEMP/venv/bin/python" "$RUNNER_TEMP/live-browser.py" --live'
             print('::group::'+step['name'],flush=True)
-            subprocess.run(['bash','-euo','pipefail','-c',script],check=True)
+            if step['name']=='Install live browser verification environment':
+              log=Path(os.environ['RUNNER_TEMP'])/'browser-install.log'
+              with log.open('w') as out:r=subprocess.run(['bash','-euo','pipefail','-c',script],stdout=out,stderr=subprocess.STDOUT)
+              if r.returncode:print(log.read_text()[-10000:],flush=True)
+              r.check_returncode();print('Browser dependencies installed',flush=True)
+            else:subprocess.run(['bash','-euo','pipefail','-c',script],check=True)
             print('::endgroup::',flush=True)
           PY
       - uses: actions/upload-artifact@v4
