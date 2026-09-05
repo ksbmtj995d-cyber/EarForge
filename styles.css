@@ -414,7 +414,6 @@ select{width:100%;border:1px solid var(--line);border-radius:14px;padding:11px 1
   .action-card .action-meta,.action-card .action-kicker{color:var(--text)}
 }
 
-/* CSP-safe progress widths: the runtime applies one bounded class, never an inline style. */
 .bar span.p-0,.progress-track span.p-0{width:0%}
 .bar span.p-1,.progress-track span.p-1{width:1%}
 .bar span.p-2,.progress-track span.p-2{width:2%}
@@ -522,7 +521,6 @@ fieldset.field{border:0;padding:0;margin:0}fieldset.field legend{font-weight:760
 @media(prefers-reduced-motion:reduce){.hero-live.visual-motion .hero-settle-a,.hero-live.visual-motion .hero-settle-b{animation:none!important}}
 
 
-/* 11.20 semantic visual identity: modules differ by function, not random decoration. */
 html[data-visual-route^="rhythm"] body,
 html[data-visual-route="labRhythm"] body{
   background:
@@ -559,3 +557,7 @@ html[data-visual-route^="vocal"] .card{border-top:3px solid color-mix(in srgb,va
 html[data-visual-route^="lab"] .lab-tool{border-bottom:4px solid color-mix(in srgb,var(--accent-2) 58%,var(--line))}
 @media(max-width:560px){html[data-visual-route^="rhythm"] .card,html[data-visual-route^="vocal"] .card{border-left-width:2px;border-top-width:2px}}
 @media(forced-colors:active){html[data-visual-route^="rhythm"] .action-card,html[data-visual-route^="rhythm"] .card,html[data-visual-route^="vocal"] .action-card,html[data-visual-route^="vocal"] .card,html[data-visual-route^="lab"] .lab-tool{border-color:CanvasText}}
+
+.score-control{display:flex;flex-direction:column;gap:.4rem;margin-block:1rem}.score-control label{font-weight:600}.score-control select,.score-control input{max-width:100%;padding:.6rem;font:inherit}.score-buttons{display:flex;flex-wrap:wrap;gap:.6rem;margin-block:1rem}.score-buttons button{min-height:44px;padding:.65rem 1rem;font:inherit}#score-transcript{white-space:normal;line-height:1.7;overflow-wrap:anywhere}.score-screen fieldset{border:1px solid currentColor;border-radius:12px;min-width:0;padding:1rem}.score-screen button{cursor:pointer}#score-transcript[hidden]{display:none}
+
+.production-screen label{display:flex;flex-direction:column;gap:.4rem;margin-block:.6rem}.production-screen input[type="text"]{box-sizing:border-box;width:100%;min-height:48px;border:1px solid var(--line);border-radius:14px;padding:11px 13px;color:var(--text);background:var(--surface-soft)}.production-screen fieldset{margin-block:1rem}.production-screen details{margin-block:1rem}.production-screen p{overflow-wrap:anywhere}

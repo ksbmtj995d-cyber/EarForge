@@ -1,23 +1,27 @@
 # EarForge
 
-EarForge est un atelier d’entraînement auditif progressif, du premier mouvement mélodique aux progressions, basses et voix indépendantes.
+Entraînez votre oreille musicale avec des exercices progressifs, une séance du jour et un mode mains libres.
 
-## Écouter dans de vrais contextes musicaux
+## Écouter et progresser
 
-Les exercices font varier timbres, registres, articulations et tempos lorsque la réponse reste strictement la même. Les progressions proposent accords plaqués, basse puis accord, accord puis basse, alternance et arpèges. Les rythmes peuvent prendre des couleurs rock, funk, hip-hop, acoustiques, composées ou issues de traditions du monde.
+Travaillez les hauteurs, les intervalles, les accords, les mélodies et les rythmes. Les instruments intégrés offrent des variations sonores sans bibliothèque audio à télécharger. Les réglages de son et de voix permettent de choisir les annonces qui accompagnent les exercices.
 
-## Un parcours qui se construit dans le temps
+## Partition accessible
 
-La Séance du jour combine découverte bornée, pratique ciblée et révisions espacées. Le mode Mains libres permet une écoute continue. La progression distingue ce qui est ouvert, pratiqué, transféré et réellement consolidé.
+Ouvrez « Plus », puis « Partition accessible » pour consulter un fichier MusicXML ou MXL local. Choisissez la partie, la voix et la mesure, écoutez la musique, lancez une dictée orale ou exportez le texte. Le style détaillé conserve les positions exactes. Le do central est nommé do quatre.
 
-## Un laboratoire par besoin
+L’aperçu suit l’ordre écrit : les reprises et les sauts ne sont pas déroulés. Certaines nuances d’interprétation, notes d’agrément et percussions non identifiées peuvent ne pas être restituées. Les réserves sont signalées. Un accord chiffré est dicté sans créer automatiquement un accompagnement.
 
-Six catégories regroupent les mesures facultatives : généralisation, espace auditif, rythme et temps, hauteur et justesse, mémoire et transcription, harmonie et voix. Une séance peut orienter vers l’outil pertinent sans imposer d’accessoire ni modifier artificiellement la maîtrise.
+## Reconstruction multivoix
 
-## Accessible, local et hors ligne
+Écoutez deux, trois ou quatre voix ensemble puis saisissez les notes de chacune. La note de départ est fournie. L’écoute d’une voix isolée reste disponible comme aide et apparaît dans le résultat. La correction porte sur les séquences, les contours et les hauteurs, pas sur les durées.
 
-L’ordre de lecture, les noms de commandes, le clavier, le tactile, les contrastes renforcés et le mouvement réduit sont pris en charge. Le clavier MIDI reste facultatif et aucun microphone n’est utilisé. La progression demeure sur l’appareil et peut être exportée. Après un premier chargement complet, l’application fonctionne hors ligne.
+Les connexions MIDI sont facultatives et dépendent du navigateur et du matériel. La saisie texte et les instruments intégrés restent disponibles sans permission MIDI.
 
+## Vos données restent sur votre appareil
 
-## Frontières actives
-Probes de transfert hors renderer, seuil spatial HRTF, tempo expressif continu, rappel libre clavier/braille et mesure de latence d’interface. Ces mesures restent séparées de la maîtrise quotidienne et ne revendiquent aucune validation humaine externe tant que les données correspondantes ne sont pas présentes.
+Aucun compte ni microphone n’est requis. Les fichiers musicaux ne sont pas envoyés à un serveur. Les données d’entraînement sont conservées localement et peuvent être exportées pour être sauvegardées. La consultation de partitions et les résultats de reconstruction restent séparés de la maîtrise du parcours.
+
+L’application peut être installée depuis un navigateur compatible. Le premier chargement complet nécessite une connexion ; les ressources mises en cache permettent ensuite une utilisation hors connexion.
+
+Version 11.32.0.
