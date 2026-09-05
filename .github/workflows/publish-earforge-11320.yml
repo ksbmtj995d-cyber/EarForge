@@ -47,7 +47,7 @@ jobs:
             script=step['run'].replace('d91f85a21393fb4a60516e6c55c084915f0bed82',os.environ['BROWSER_SHA']).replace("if name=='browser.py':","if False:")
             if step['name']=='Test Chromium WebKit offline and existing user upgrade':
               path=Path(os.environ['RUNNER_TEMP'])/'browser.py';code=path.read_text()
-              code=code.replace(" assert version in page.locator('body').inner_text()"," print('BOOT_DOM',version,page.locator('body').inner_text()[:1600],flush=True)\n expect(page.locator('body')).to_contain_text(version,timeout=20000)")
+              code=code.replace(" assert version in page.locator('body').inner_text()"," page.locator('#settings').click()\n expect(page.locator('body')).to_contain_text(version,timeout=15000)\n page.locator('#back').click()\n page.wait_for_selector('#plus')")
               old='  for path,value in verified.items():assert value==manifest[path],path'
               new="  for path,value in verified.items():\n   if value!=manifest[path]:\n    print('CACHE_MISMATCH',json.dumps({'path':path,'cache':value,'expected':manifest[path],'diskBytes':(SITE/path).stat().st_size,'diskSHA':hashlib.sha256((SITE/path).read_bytes()).hexdigest(),'httpSHA':hashlib.sha256(page.request.get(url+path).body()).hexdigest()}),flush=True)\n  assert all(value==manifest[path] for path,value in verified.items()),'Cache manifest mismatch'"
               assert old in code;path.write_text(code.replace(old,new))
@@ -96,7 +96,7 @@ jobs:
             assert hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()==sha
             return data
           plan=yaml.safe_load(blob(os.environ['PLAN_SHA']))
-          code=blob(os.environ['BROWSER_SHA']).decode().replace(" assert version in page.locator('body').inner_text()"," expect(page.locator('body')).to_contain_text(version,timeout=20000)")
+          code=blob(os.environ['BROWSER_SHA']).decode().replace(" assert version in page.locator('body').inner_text()"," page.locator('#settings').click()\n expect(page.locator('body')).to_contain_text(version,timeout=15000)\n page.locator('#back').click()\n page.wait_for_selector('#plus')")
           path=Path(os.environ['RUNNER_TEMP'])/'live-browser.py';path.write_text(code)
           for step in plan['jobs'][os.environ['STAGE']]['steps']:
             if 'run' not in step:continue
