@@ -15,8 +15,8 @@ jobs:
     permissions:
       contents: write
     env:
-      SITE: ${{ runner.temp }}/site
-      REPORT: ${{ runner.temp }}/report
+      SITE: /tmp/earforge-site
+      REPORT: /tmp/earforge-report
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v6
@@ -79,7 +79,7 @@ jobs:
         if: always()
         with:
           name: earforge-11320-verification
-          path: ${{ runner.temp }}/report/
+          path: /tmp/earforge-report/
           if-no-files-found: error
           retention-days: 14
   verify-live:
@@ -87,13 +87,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      REPORT: ${{ runner.temp }}/report
+      REPORT: /tmp/earforge-report
       SITE_URL: https://ksbmtj995d-cyber.github.io/EarForge/
     steps:
       - uses: actions/download-artifact@v4
         with:
           name: earforge-11320-verification
-          path: ${{ runner.temp }}/report/
+          path: /tmp/earforge-report/
       - name: Install live browser verification environment
         run: |
           python3 -m venv "$RUNNER_TEMP/venv"
@@ -158,5 +158,5 @@ jobs:
         if: always()
         with:
           name: earforge-11320-live-verification
-          path: ${{ runner.temp }}/report/
+          path: /tmp/earforge-report/
           retention-days: 14
