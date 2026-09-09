@@ -1,27 +1,39 @@
 # EarForge
 
-Entraînez votre oreille musicale avec des exercices progressifs, une séance du jour et un mode mains libres.
+Écouter le détail. Comprendre le mouvement. Retrouver le geste musical.
 
-## Écouter et progresser
+[Ouvrir EarForge](https://ksbmtj995d-cyber.github.io/EarForge/)
 
-Travaillez les hauteurs, les intervalles, les accords, les mélodies et les rythmes. Les instruments intégrés offrent des variations sonores sans bibliothèque audio à télécharger. Les réglages de son et de voix permettent de choisir les annonces qui accompagnent les exercices.
+EarForge accompagne l’entraînement de l’oreille, des premières différences de hauteur aux mélodies, aux rythmes et aux voix indépendantes. Choisissez la séance du jour, une écoute mains libres ou un atelier ciblé, selon votre temps et vos objectifs.
 
-## Partition accessible
+## Une oreille qui progresse
 
-Ouvrez « Plus », puis « Partition accessible » pour consulter un fichier MusicXML ou MXL local. Choisissez la partie, la voix et la mesure, écoutez la musique, lancez une dictée orale ou exportez le texte. Le style détaillé conserve les positions exactes. Le do central est nommé do quatre.
+Travaillez les intervalles, les accords, les gammes, les cadences, les mouvements mélodiques et les relations harmoniques. Les exercices varient les sons et les contextes d’écoute. Le parcours adapte les séances à vos réponses et organise les révisions. Retrouvez votre progression et vos résultats dans l’application.
 
-L’aperçu suit l’ordre écrit : les reprises et les sauts ne sont pas déroulés. Certaines nuances d’interprétation, notes d’agrément et percussions non identifiées peuvent ne pas être restituées. Les réserves sont signalées. Un accord chiffré est dicté sans créer automatiquement un accompagnement.
+## Écouter sans regarder l’écran
 
-## Reconstruction multivoix
+Le mode mains libres propose une écoute continue. Les annonces vocales et le débit de lecture se règlent selon vos préférences. Les commandes au clavier, les libellés et la lecture des contenus permettent de pratiquer avec un lecteur d’écran.
 
-Écoutez deux, trois ou quatre voix ensemble puis saisissez les notes de chacune. La note de départ est fournie. L’écoute d’une voix isolée reste disponible comme aide et apparaît dans le résultat. La correction porte sur les séquences, les contours et les hauteurs, pas sur les durées.
+## Sentir et reproduire le rythme
 
-Les connexions MIDI sont facultatives et dépendent du navigateur et du matériel. La saisie texte et les instruments intégrés restent disponibles sans permission MIDI.
+Écoutez une phrase rythmique, puis reproduisez-la avec une pulsation continue. Choisissez une difficulté adaptée, des divisions rythmiques, différents claps et des ensembles de percussions. Le métronome conserve un son distinct des frappes à reproduire.
 
-## Vos données restent sur votre appareil
+## Lire une partition par l’écoute
 
-Aucun compte ni microphone n’est requis. Les fichiers musicaux ne sont pas envoyés à un serveur. Les données d’entraînement sont conservées localement et peuvent être exportées pour être sauvegardées. La consultation de partitions et les résultats de reconstruction restent séparés de la maîtrise du parcours.
+Ouvrez une partition MusicXML, XML ou MXL et parcourez-la mesure par mesure. Choisissez une partie, une portée, une ligne musicale ou un instrument. Écoutez la musique, consultez sa dictée française, faites-la lire à voix haute ou exportez-la en texte. Les reprises et renvois pris en charge peuvent être suivis pendant la lecture ; les éléments non restitués sont signalés.
 
-L’application peut être installée depuis un navigateur compatible. Le premier chargement complet nécessite une connexion ; les ressources mises en cache permettent ensuite une utilisation hors connexion.
+## Chanter avec un accompagnement
 
-Version 11.32.0.
+Le module Vocal propose des exercices selon votre tessiture et le temps disponible, avec introductions, respirations et transitions harmonisées. Les glissements vocaux disposent d’un guide de hauteur continu. Cette séance accompagne la pratique sans enregistrer ni évaluer automatiquement votre voix. Les techniques et syllabes sont expliquées dans le guide ; adaptez la tessiture et arrêtez en cas d’inconfort.
+
+## Retrouver plusieurs mélodies
+
+Écoutez deux, trois ou quatre lignes musicales simultanées, puis reconstruisez les notes de chacune à partir d’une première note donnée. Isolez une ligne lorsque vous avez besoin d’aide. La correction porte sur les notes, les hauteurs et le contour ; les résultats restent distincts de ceux du parcours. Un clavier et une sortie MIDI compatibles peuvent compléter la saisie texte.
+
+## Approfondir votre écoute
+
+Le laboratoire propose des ateliers de mémoire, de justesse, de rythme, d’espace sonore et d’harmonie. Le guide présente les exercices, les commandes et la lecture des résultats.
+
+## Vos séances, vos données
+
+Pratiquez sans compte, sans microphone obligatoire, avec des données d’entraînement conservées sur votre appareil. Les partitions ouvertes ne sont pas envoyées sur Internet. Sauvegardez vos résultats avec l’export intégré. L’utilisation hors connexion est disponible après un premier chargement complet, selon le navigateur ; les fonctions MIDI et les voix de lecture dépendent de l’appareil.

@@ -17,7 +17,8 @@
     ['brass','lip',1900,.85,.040,.23],['trumpet','lip',2450,1.0,.020,.18],['trombone','lip',1450,.84,.035,.23],['frenchHorn','lip',920,.75,.055,.28],['tuba','lip',480,.70,.075,.30],
     ['accordion','free',1800,.82,.022,.13],['harmonica','free',2350,1.1,.028,.16]
   ];
-  const profiles=Object.freeze(Object.fromEntries(rows.map(([id,family,formant,resonance,attack,release])=>[id,Object.freeze({...families[family],id,family,formant,resonance,attack,release})])));
+  const jetColors=Object.freeze({flute:{slope:2.35,even:1,noise:.024,position:.34,upper:.30},piccolo:{slope:2.05,even:1,noise:.027,position:.28,upper:.36},ney:{slope:1.95,even:.88,noise:.085,position:.22,upper:.52},bansuri:{slope:2.85,even:1,noise:.022,position:.42,upper:.22},shakuhachi:{slope:2.25,even:.72,noise:.12,position:.18,upper:.40}});
+  const profiles=Object.freeze(Object.fromEntries(rows.map(([id,family,formant,resonance,attack,release])=>[id,Object.freeze({...families[family],...(jetColors[id]||{}),id,family,formant,resonance,attack,release})])));
   const caches=new WeakMap(),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
   function hash(text){let h=2166136261;for(const c of String(text))h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0;}
   function coefficients(id,hz,sampleRate,velocity=.84,phaseSeed=0,attack=false){
@@ -27,7 +28,7 @@
     for(let n=1;n<=count;n++){
       const frequency=hz*n,formant=Math.exp(-.5*Math.pow(Math.log(frequency/p.formant)/.52,2)),edge=1/(1+Math.pow(frequency/(p.formant*(1.2+v)),3)),parity=n%2?1:p.even+(p.family==='cylinder'?.18*v:0),position=.65+.35*Math.abs(Math.sin(Math.PI*n*p.position));
       let weight=Math.pow(n,-slope)*parity*(1+p.resonance*formant)*position*edge;
-      if(p.family==='jet'&&n>4)weight*=.22;
+      if(p.family==='jet'&&n>4)weight*=p.upper||.22;
       if(n===1)weight=Math.max(.5,weight);
       const angle=n*phase+(p.family==='cone'||p.family==='double'?Math.atan(n*.12):0);
       real[n]=weight*Math.cos(angle);imag[n]=weight*Math.sin(angle);total+=weight;
@@ -54,12 +55,12 @@
     }
     if(p.noise>0){
       const src=make('createBufferSource'),filter=make('createBiquadFilter'),gain=make('createGain');
-      // A short deterministic exciter loops; note duration does not allocate a long noise buffer.
+
       src.buffer=engine.noiseBuffer(.37,`${id}:${seed}`);src.loop=true;filter.type='bandpass';filter.frequency.value=Math.min(ctx.sampleRate*.40,Math.max(250,p.formant));filter.Q.value=.70;
       gain.gain.setValueAtTime(p.noise*(.45+.55*velocity),start);gain.gain.linearRampToValueAtTime(p.noise*.40,start+cross);src.connect(filter).connect(gain).connect(out);src.start(start);src.stop(end+.012);
     }
     engine.cleanupGraph(nodes,end+.012);return end;
   }
   function cacheStats(ctx){return{entries:caches.get(ctx)?.size||0,maxEntries:128};}
-  return Object.freeze({profiles,ids:Object.freeze(Object.keys(profiles)),coefficients,render,cacheStats});
+  return Object.freeze({profiles,ids:Object.freeze(Object.keys(profiles)),render});
 });

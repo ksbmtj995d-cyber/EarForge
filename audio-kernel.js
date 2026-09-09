@@ -1,6 +1,16 @@
 'use strict';
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.EarForgeAudioKernel=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
  const TAU=Math.PI*2;
+
+ function epianoCarrierPCM(freq,sr,duration,velocity=.84){
+  if(!Number.isFinite(sr)||sr<8000||sr>192000||!Number.isFinite(freq)||freq<=0||freq>=sr*.47||!Number.isFinite(duration)||duration<=0||duration>60||!Number.isFinite(velocity)||velocity<0||velocity>1)throw new Error('Paramètres FM invalides');
+  const n=Math.ceil(sr*(duration+.46)),x=new Float32Array(n),a=freq*(.12+velocity*velocity),b=Math.max(1,freq*(.02+.04*velocity)),decay=Math.max(1/sr,duration*.72),k=Math.log(b/a)/decay,w=TAU*freq*2.01,den=k*k+w*w;
+
+  const integral=t=>a*(Math.exp(k*t)*(k*Math.sin(w*t)-w*Math.cos(w*t))+w)/den,atDecay=integral(decay),cosDecay=Math.cos(w*decay);
+  for(let i=0;i<n;i++){const t=i/sr,phase=t<=decay?integral(t):atDecay+b*(cosDecay-Math.cos(w*t))/w;x[i]=Math.sin(TAU*(freq*t+phase));}
+  return x;
+ }
+
  function hashSeed(value){let h=2166136261>>>0;const s=String(value);for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
  function rng(seed){let a=(typeof seed==='number'?seed:hashSeed(seed))>>>0;return()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^a>>>15,1|a);t=(t+Math.imul(t^t>>>7,61|t))^t;return((t^t>>>14)>>>0)/4294967296}}
  function clamp(v,a,b){return Math.min(b,Math.max(a,v))}
@@ -12,7 +22,7 @@
  function onePolePhaseDelay(freq,sr,smooth){const w=TAU*Math.max(.01,freq)/sr;if(Math.abs(w)<1e-9)return smooth/Math.max(1e-9,1-smooth);return Math.atan2(smooth*Math.sin(w),1-smooth*Math.cos(w))/w}
  function bandNoise(n,sr,low,high,random){const a=new Float32Array(n);for(let i=0;i<n;i++)a[i]=random()*2-1;onePoleHP(a,low,sr);onePoleLP(a,high,sr);return a}
  function modalAt(t,modes,phase=0){let y=0;for(let i=0;i<modes.length;i++){const [freq,amp,decay]=modes[i];y+=amp*Math.sin(TAU*freq*t+phase*(i+1))*Math.exp(-t/Math.max(.008,decay))}return y}
-function envelope(i,sr,attack,decay,curve=3){const t=i/sr;if(t<attack)return Math.pow(t/Math.max(.00001,attack),.65);return Math.exp(-Math.pow((t-attack)/Math.max(.00001,decay),curve===1?1:.85)*curve)}
+
  function baseDrumPCM(kind,sr=44100,velocity=.85,seed=1){const r=rng(`${kind}:${seed}`),phase=(r()-.5)*.7;const d={kick:.78,snare:.42,clap:.46,hatClosed:.12,hatOpen:.76,tomLow:.78,tomHigh:.60,ride:1.65,cowbell:.62,shaker:.34,woodblock:.36}[kind]||.4,n=Math.ceil(sr*d),x=new Float32Array(n);let oscPhase=0;
   if(kind==='kick')for(let i=0;i<n;i++){const t=i/sr,f=42+118*Math.exp(-t/.032);oscPhase+=TAU*f/sr;const membrane=Math.sin(oscPhase)*Math.exp(-t/.28)+.18*Math.sin(oscPhase*.51)*Math.exp(-t/.38),click=(r()*2-1)*Math.exp(-t/.0055);x[i]=soft((membrane+click*.14)*velocity,1.75)}
   else if(kind==='snare'){const noise=bandNoise(n,sr,820,14200,r),modes=[[182,.22,.125],[342,.14,.090],[516,.075,.062],[748,.036,.046]];for(let i=0;i<n;i++){const t=i/sr,wire=noise[i]*(1.02*Math.exp(-t/.105)+.16*Math.exp(-t/.26)),shell=modalAt(t,modes,phase),attack=(r()*2-1)*Math.exp(-t/.0034)*.24;x[i]=soft((wire*.68+shell+attack)*velocity,1.58)}}
@@ -43,12 +53,60 @@ function envelope(i,sr,attack,decay,curve=3){const t=i/sr;if(t<attack)return Mat
   darbukaDum:{d:.62,m:[[138,.78,.36],[273,.16,.22],[515,.07,.13]],noise:.06,band:[350,5000],drive:1.35},darbukaTek:{d:.30,m:[[420,.45,.15],[860,.20,.10],[1680,.08,.07]],noise:.24,band:[1000,10500],drive:1.42},darbukaKa:{d:.25,m:[[610,.32,.11],[1240,.15,.08]],noise:.34,band:[1400,11500],drive:1.38},riqClosed:{d:.18,m:[[4200,.025,.08],[6900,.018,.06]],noise:.72,band:[4800,17000],drive:1.18},riqOpen:{d:.72,m:[[1720,.05,.43],[3550,.035,.35],[7200,.025,.28]],noise:.48,band:[3500,17000],drive:1.12},riqBell:{d:.44,m:[[1160,.18,.25],[2380,.12,.20],[4750,.07,.15]],noise:.06,band:[2200,14000],drive:1.14},riqShake:{d:.32,m:[],noise:.78,band:[4200,16500],drive:1.10,trem:27},
   bayan:{d:.80,m:[[91,.76,.46],[136,.19,.30],[232,.07,.18]],noise:.05,band:[180,3200],drive:1.32},tablaNa:{d:.36,m:[[303,.48,.20],[612,.20,.13],[1110,.08,.08]],noise:.18,band:[800,9000],drive:1.38},tablaTin:{d:.48,m:[[448,.44,.27],[790,.20,.19],[1460,.09,.12]],noise:.12,band:[1000,10500],drive:1.34},tablaTe:{d:.28,m:[[670,.34,.13],[1320,.14,.08]],noise:.22,band:[1200,10000],drive:1.34},manjira:{d:.50,m:[[2850,.08,.30],[4930,.06,.24],[7600,.04,.18],[11200,.025,.14]],noise:.18,band:[5200,18000],drive:1.08},manjiraOpen:{d:1.05,m:[[2440,.08,.72],[4210,.06,.58],[6910,.045,.44],[10400,.03,.31]],noise:.15,band:[4700,18000],drive:1.06},khartal:{d:.30,m:[[1560,.14,.12],[3050,.08,.09]],noise:.52,band:[1800,13000],drive:1.22,trem:15}
  };
+
+ Object.assign(PERC,{
+   softKick:{d:.56,m:[[47,.86,.30],[92,.11,.16]],noise:.018,band:[120,1700],drive:1.12},
+   softSnare:{d:.32,m:[[166,.42,.14],[309,.19,.10],[487,.075,.07]],noise:.23,band:[950,6500],drive:1.10},
+   tightSnare:{d:.20,m:[[218,.36,.077],[405,.16,.054],[646,.06,.035]],noise:.35,band:[1500,9000],drive:1.28},
+   analogKick:{d:.63,m:[[49,.88,.36],[98,.08,.11]],noise:.009,band:[120,2200],drive:1.42},
+   analogSnare:{d:.27,m:[[185,.34,.105],[335,.18,.078]],noise:.40,band:[1300,7800],drive:1.34}
+ });
+ Object.assign(KIT_MAP,{
+   soft:{...KIT_MAP.brushes,kick:'softKick',snare:'softSnare',clap:'clapSoft'},
+   tight:{...KIT_MAP.dry,snare:'tightSnare',clap:'clapDry'},
+   analog:{...KIT_MAP.electronic,kick:'analogKick',snare:'analogSnare',clap:'clapElectronic'}
+ });
+ const CLAP_PROFILES=Object.freeze({
+   clapDry:Object.freeze({duration:.16,bursts:[0,.009,.021],band:[1300,8800],decay:.013,tail:.020,body:.045}),
+   clapSoft:Object.freeze({duration:.24,bursts:[0,.013,.029],band:[650,5200],decay:.022,tail:.034,body:.085}),
+   clapWide:Object.freeze({duration:.39,bursts:[0,.011,.027,.043],band:[1100,10800],decay:.021,tail:.064,body:.030}),
+   clapElectronic:Object.freeze({duration:.22,bursts:[0,.010,.020],band:[1700,9500],decay:.012,tail:.031,body:.015})
+ });
+ for(const profile of Object.values(CLAP_PROFILES)){Object.freeze(profile.band);Object.freeze(profile.bursts)}
+ function clapPCM(name,sr=44100,velocity=.85,seed=1){
+   if(!CLAP_PROFILES[name]||!Number.isFinite(sr)||sr<8000||sr>192000||!Number.isFinite(velocity)||velocity<0||velocity>1)throw new Error('Paramètres de clap invalides');
+   const q=CLAP_PROFILES[name],n=Math.ceil(q.duration*sr),r=rng(`clap35:${name}:${seed}`),x=new Float32Array(n);
+   const noise=bandNoise(n,sr,q.band[0],Math.min(sr*.44,q.band[1]),r);onePoleLP(noise,Math.min(sr*.44,q.band[1]),sr);
+   for(let i=0;i<n;i++){
+     const t=i/sr;let env=0;
+     for(let j=0;j<q.bursts.length;j++)if(t>=q.bursts[j]){
+       const d=t-q.bursts[j],attack=Math.min(1,d/.0006);
+       env+=attack*Math.exp(-d/(j===q.bursts.length-1?q.tail:q.decay));
+     }
+     const body=q.body*Math.sin(TAU*740*t)*Math.exp(-t/.026);
+     x[i]=soft((noise[i]*env*.65+body)*velocity,1.16);
+   }
+   return tailFade(normalize(x,.86),sr,.016);
+ }
  function profilePercPCM(name,sr=44100,velocity=.85,seed=1){const q=PERC[name];if(!q)return null;const r=rng(`${name}:${seed}`),n=Math.ceil(sr*q.d),x=new Float32Array(n),noise=q.noise?bandNoise(n,sr,q.band?.[0]||500,q.band?.[1]||12000,r):null,phase=(r()-.5)*.7;for(let i=0;i<n;i++){const t=i/sr,mod=q.trem?(.66+.34*Math.sin(TAU*q.trem*t)):1,body=modalAt(t,q.m||[],phase),nz=noise?noise[i]*q.noise*Math.exp(-t/(q.d*.38))*mod:0,click=(r()*2-1)*Math.exp(-t/.0035)*(.025+.04*velocity);x[i]=soft((body+nz+click)*velocity,q.drive||1.2)}return tailFade(normalize(x,.90),sr,.012)}
  const SNARE_PROFILES=Object.freeze({crack:{d:.34,band:[1450,15800],m:[[196,.23,.105],[386,.12,.072],[712,.055,.049]],wire:.82,shell:.86,drive:1.62},warm:{d:.48,band:[720,12400],m:[[174,.27,.18],[318,.15,.13],[522,.075,.085]],wire:.68,shell:1.05,drive:1.48},deep:{d:.56,band:[560,10800],m:[[148,.31,.22],[286,.17,.15],[446,.075,.10]],wire:.61,shell:1.12,drive:1.44}});
- function studioSnarePCM(profile='crack',sr=44100,velocity=.85,seed=1){const q=SNARE_PROFILES[profile]||SNARE_PROFILES.crack,r=rng(`studio-snare:${profile}:${seed}`),n=Math.ceil(sr*q.d),x=new Float32Array(n),wire=bandNoise(n,sr,q.band[0],q.band[1],r),phase=(r()-.5)*.6;for(let i=0;i<n;i++){const t=i/sr,wireEnv=Math.exp(-t/(q.d*.24))+.15*Math.exp(-t/(q.d*.60)),shell=modalAt(t,q.m,phase)*q.shell,stick=(r()*2-1)*Math.exp(-t/.0028)*(.22+.13*velocity),air=wire[i]*q.wire*wireEnv;x[i]=soft((air+shell+stick)*velocity,q.drive)}return tailFade(normalize(x,.90),sr,.014)}
+ function studioSnarePCM(profile='crack',sr=44100,velocity=.85,seed=1){const q=SNARE_PROFILES[profile]||SNARE_PROFILES.crack,r=rng(`studio-snare:${profile}:${seed}`),n=Math.ceil(sr*q.d),x=new Float32Array(n),wire=bandNoise(n,sr,q.band[0],Math.min(q.band[1],9200,sr*.44),r),phase=(r()-.5)*.6;onePoleLP(wire,Math.min(7800,sr*.42),sr);for(let i=0;i<n;i++){const t=i/sr,wireEnv=Math.exp(-t/(q.d*.18))+.06*Math.exp(-t/(q.d*.38)),shell=modalAt(t,q.m,phase)*q.shell*1.18,stick=(r()*2-1)*Math.exp(-t/.0028)*(.13+.09*velocity),air=wire[i]*q.wire*.68*wireEnv;x[i]=soft((air+shell+stick)*velocity,q.drive)}return tailFade(normalize(x,.90),sr,.014)}
  const ROOM_PROFILES=Object.freeze({dry:{duration:.06,decay:8.8,early:[[0,1],[.009,.13],[.019,-.08]]},close:{duration:.16,decay:6.7,early:[[0,1],[.012,.19],[.029,-.12],[.051,.07]]},studio:{duration:.38,decay:5.1,early:[[0,1],[.017,.24],[.041,-.15],[.078,.10],[.121,-.06]]},room:{duration:.72,decay:4.2,early:[[0,1],[.023,.27],[.057,-.18],[.109,.12],[.181,-.08]]},hall:{duration:1.28,decay:3.4,early:[[0,1],[.031,.29],[.083,-.20],[.151,.14],[.247,-.09]]}});
  function roomImpulsePCM(name='studio',sr=44100,channel=0){const q=ROOM_PROFILES[name]||ROOM_PROFILES.studio,n=Math.max(64,Math.round(sr*q.duration)),x=new Float32Array(n),r=rng(`room:${name}:${sr}:${channel}`);for(let i=0;i<n;i++){const t=i/Math.max(1,n-1),density=Math.min(1,i/(sr*.035));x[i]=(r()*2-1)*Math.exp(-q.decay*t)*density*(channel?.82:.88)}for(const [seconds,amp] of q.early){const i=Math.min(n-1,Math.round(seconds*sr));x[i]+=amp*(channel&&i?-.92:1)}onePoleHP(x,90,sr);onePoleLP(x,name==='hall'?10500:14500,sr);return tailFade(normalize(x,.78),sr,.018)}
- function drumPCM(kind,sr=44100,velocity=.85,seed=1,kit='studio'){if(PERC[kind])return profilePercPCM(kind,sr,velocity,seed);if((!kit||kit==='studio')&&kind==='snare'){const names=Object.keys(SNARE_PROFILES),profile=names[hashSeed(`${seed}:${velocity}`)%names.length];return studioSnarePCM(profile,sr,velocity,seed)}if(!kit||kit==='studio')return baseDrumPCM(kind,sr,velocity,seed);const name=KIT_MAP[kit]?.[kind]||KIT_MAP[kit]?.snare;return profilePercPCM(name,sr,velocity,seed)||baseDrumPCM(kind,sr,velocity,seed)}
+ function drumPCM(kind,sr=44100,velocity=.85,seed=1,kit='studio'){
+   if(!Number.isFinite(sr)||sr<8000||sr>192000||!Number.isFinite(velocity)||velocity<0||velocity>1)throw new Error('Paramètres de percussion invalides');
+   kind=kind==='hat'?'hatClosed':kind;
+   if(CLAP_PROFILES[kind])return clapPCM(kind,sr,velocity,seed);
+   if(PERC[kind])return profilePercPCM(kind,sr,velocity,seed);
+   if(!kit||kit==='studio'){
+     if(kind==='snare'){const names=Object.keys(SNARE_PROFILES);return studioSnarePCM(names[hashSeed(`${seed}:${velocity}`)%names.length],sr,velocity,seed)}
+     return baseDrumPCM(kind,sr,velocity,seed);
+   }
+   const name=KIT_MAP[kit]?.[kind];
+   if(CLAP_PROFILES[name])return clapPCM(name,sr,velocity,seed);
+
+   return profilePercPCM(name,sr,velocity,seed)||baseDrumPCM(kind,sr,velocity,seed);
+ }
  const MODAL_PROFILES=Object.freeze({
   celesta:{m:[[1,.52,.75],[2.01,.24,.54],[3.98,.14,.39],[5.43,.08,.30],[8.08,.04,.21]],noise:.035},
   vibraphone:{m:[[1,.56,1.15],[3.96,.22,.82],[9.02,.10,.58],[14.1,.045,.41]],noise:.012,trem:5.4},
@@ -119,11 +177,11 @@ function envelope(i,sr,attack,decay,curve=3){const t=i/sr;if(t<attack)return Mat
  function bodyIR(name='wood',sr=44100){const presets={wood:[[0,1],[2,.22],[5,-.12],[11,.08],[19,-.045]],gourd:[[0,1],[3,.30],[8,-.18],[15,.10],[27,-.05]],skin:[[0,1],[4,.16],[7,-.11],[13,.07]],metal:[[0,1],[1,.12],[6,-.15],[17,.11],[31,-.07]]},q=presets[name]||presets.wood,n=Math.max(32,Math.round(sr*.0012)),ir=new Float32Array(n);for(const [i,a] of q)if(i<n)ir[i]=a;return ir}
  function applyFIR(input,ir){const y=new Float32Array(input.length),offsets=[],weights=[];for(let k=0;k<Math.min(ir.length,48);k++)if(ir[k]!==0){offsets.push(k);weights.push(ir[k])}const count=offsets.length;for(let i=0;i<input.length;i++){let v=0;for(let j=0;j<count;j++){const k=offsets[j];if(k>i)break;v+=input[i-k]*weights[j]}y[i]=v}return normalize(y,.88)}
  function hybridPluckPCM(name,freq,sr=44100,duration=1.8,seed=1,velocity=.8){const cfg={kora:[.54,'gourd'],koto:[.76,'wood'],oud:[.46,'wood'],qanun:[.70,'wood']}[name]||[.62,'wood'],v=clamp(velocity,0,1),brightness=clamp(cfg[0]+.24*(v-.8),.15,.95),base=pluckPCM(freq,sr,duration,`${name}:${seed}`,brightness);if(v===0)return new Float32Array(base.length);const body=applyFIR(base,bodyIR(cfg[1],sr));return tailFade(normalize(body,.86),sr,.018)}
- function pcmStats(x,sr=44100){let peak=0,sum=0,z=0,prev=x[0]||0,attack=0;for(let i=0;i<x.length;i++){const a=Math.abs(x[i]);if(a>peak){peak=a;attack=i/sr}sum+=x[i]*x[i];if((x[i]>=0)!=(prev>=0))z++;prev=x[i]}return{samples:x.length,duration:x.length/sr,peak,rms:Math.sqrt(sum/Math.max(1,x.length)),zeroCrossRate:z/Math.max(1,x.length-1),attackSeconds:attack}}
+
  function compileTempoCurve(points){const rows=(points||[]).map(p=>({beat:Number(p.beat),bpm:clamp(Number(p.bpm),20,320)})).filter(p=>Number.isFinite(p.beat)&&Number.isFinite(p.bpm)).sort((a,b)=>a.beat-b.beat);if(!rows.length)rows.push({beat:0,bpm:72});if(rows[0].beat>0)rows.unshift({beat:0,bpm:rows[0].bpm});for(let i=1;i<rows.length;i++)if(!(rows[i].beat>rows[i-1].beat))throw new Error('Courbe de tempo non strictement croissante');return Object.freeze(rows.map(Object.freeze))}
  function tempoAtBeat(curve,beat){const c=compileTempoCurve(curve),x=Math.max(c[0].beat,Number(beat)||0);let i=0;while(i<c.length-1&&x>c[i+1].beat)i++;if(i>=c.length-1)return c.at(-1).bpm;const a=c[i],b=c[i+1],u=(x-a.beat)/(b.beat-a.beat);return a.bpm+(b.bpm-a.bpm)*u}
  function beatToSeconds(curve,beat){const c=compileTempoCurve(curve),target=Math.max(0,Number(beat)||0);let sec=0;for(let i=0;i<c.length;i++){const a=c[i],next=c[i+1],end=Math.min(target,next?next.beat:target);if(end<=a.beat)break;const span=end-a.beat,b0=a.bpm,b1=next?tempoAtBeat([a,next],end):b0,k=next?(b1-b0)/span:0;if(Math.abs(k)<1e-10)sec+=60*span/b0;else sec+=60/k*Math.log((b0+k*span)/b0);if(end>=target)break}return sec}
  function expressiveTempoSchedule(curve,beats){const c=compileTempoCurve(curve),n=Math.max(1,Math.floor(Number(beats)||1)),times=[];for(let b=0;b<=n;b++)times.push({beat:b,timeSeconds:beatToSeconds(c,b),bpm:tempoAtBeat(c,b)});return{schema:'earforge.expressive_tempo.v1',curve:c,times,durationSeconds:times.at(-1).timeSeconds,continuous:true}}
  function generateExpressiveTempoCurve(seed,{beats=12,baseBpm=76,span=26}={}){const n=Math.max(8,Math.round(Number(beats)||12)),base=clamp(Number(baseBpm),44,144),range=clamp(Number(span),8,52),r=rng(`tempo-curve:${seed}`),anchors=[0,.25,.5,.75,1].map(x=>Math.round(x*n)),vals=[base,base+(r()*.75+.25)*range,base-(r()*.65+.15)*range*.72,base+(r()-.5)*range*.55,base+(r()-.5)*range*.18].map(v=>clamp(v,36,176));return compileTempoCurve(anchors.map((beat,i)=>({beat,bpm:Math.round(vals[i]*10)/10})))}
- return{renderModes,hashSeed,rng,drumPCM,studioSnarePCM,roomImpulsePCM,pluckPCM,hybridPluckPCM,bodyIR,applyFIR,pianoAttackPCM,modalInstrumentPCM,oboePCM,pcmStats,normalize,tailFade,onePolePhaseDelay,KIT_MAP,SNARE_PROFILES,ROOM_PROFILES,compileTempoCurve,tempoAtBeat,beatToSeconds,expressiveTempoSchedule,generateExpressiveTempoCurve};
+ return{epianoCarrierPCM,CLAP_PROFILES,hashSeed,rng,drumPCM,roomImpulsePCM,pluckPCM,hybridPluckPCM,pianoAttackPCM,modalInstrumentPCM,oboePCM,normalize,KIT_MAP,SNARE_PROFILES,ROOM_PROFILES,expressiveTempoSchedule,generateExpressiveTempoCurve};
 });

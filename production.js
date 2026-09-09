@@ -12,10 +12,10 @@
   }
   function create({catalog,questions,state,voices=2,seed,timestamp=Date.now()}){
     if(![2,3,4].includes(Number(voices)))throw new Error('Choisir deux, trois ou quatre voix.');
-    const candidates=catalog.units.filter(u=>u.family==='voice'&&(Array.isArray(u.params?.voices)?u.params.voices.length:Number(u.params?.voices)||2)===Number(voices));
+    const candidates=catalog.units.filter(u=>u.family==='voice'&&(u.params?.voiceCount??(Array.isArray(u.params?.voices)?u.params.voices.length:Number(u.params?.voices)||2))===Number(voices));
     if(!candidates.length)throw new Error('Aucune unité compatible.');let h=2166136261;for(const c of String(seed))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;
     const unit=candidates[h%candidates.length],q=questions.makeQuestion(state,catalog,unit,{seed:String(seed),timestamp,mark:false,operation:'IDENTIFY'}),target=extract(q);
-    if(target.voices.length!==Number(voices))throw new Error('Le générateur ne respecte pas le nombre de voix.');return target;
+    if(target.voices.length!==Number(voices))throw new Error('Cet extrait ne contient pas le nombre de voix demandé.');return target;
   }
   function parse(text,{mode='relative',start=60}={}){
     if(typeof text!=='string'||text.length>4096)throw new Error('Réponse trop longue.');if(!['relative','notes'].includes(mode))throw new Error('Mode de réponse inconnu.');
@@ -40,5 +40,5 @@
     return{schema:'earforge.reconstruction.result.v1',unitId:target.unitId,seed:target.seed,timestamp:Date.now(),perVoice,accuracy,noteRecall,editDistance:perVoice.reduce((s,v)=>s+v.editDistance,0),replays,isolated:[...new Set(isolated)],assisted:isolated.length>0,referencePolicy:target.referencePolicy,mode,renderers:used,rendererCondition:used.length===1?used[0]:used.length?'mixed':'unplayed',functionalDegree:null,timingScore:null,masteryMutation:false,physicalTimingCertified:false};
   }
   function voiceSpec(target,role){if(!target.voices.some(v=>v.id===role))throw new Error('Voix inconnue.');return{...target.spec,score:{...target.spec.score,events:target.spec.score.events.filter(e=>e.role===role)}};}
-  return{create,extract,parse,align,score,voiceSpec,noteName};
+  return{create,extract,parse,score,voiceSpec,noteName};
 });

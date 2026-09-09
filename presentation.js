@@ -30,7 +30,7 @@
     for(const p of parts)if(!Number.isFinite(p.startTicks)||!Number.isFinite(p.endTicks)||p.endTicks<=p.startTicks)throw new Error('Repères de comparaison invalides');
     const split=lead+(parts[0].endTicks+parts[1].startTicks)*.5*sec;
     if(!(split>0&&split<plan.duration)||parts[1].startTicks<parts[0].endTicks)throw new Error('Exemples de comparaison superposés');
-    return[Events.slice(plan,0,split),Events.slice(plan,split,plan.duration)];
+    return Events.partition(plan,split);
   }
   class Presenter{
     constructor(audio,speaker){this.audio=audio;this.speaker=speaker;this.serial=0;}

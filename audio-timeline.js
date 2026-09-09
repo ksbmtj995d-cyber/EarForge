@@ -9,7 +9,8 @@
     const note=(pitch,time,length,instrument,level,cents,id,role='target',source=null,spectral=null)=>{
       pitch=finite(pitch,'Hauteur');time=finite(time,'Position');length=positive(length,'Durée');cents=finite(cents??0,'Altération');
       if(time<0||pitch<0||pitch>127||length>60)throw new Error('Position ou hauteur hors plage');
-      events.push({kind:spectral?'spectral':'note',pitch,time,duration:length,instrument:instrument||base,level,cents,seed:id,role,source,spectral,velocity:source?.velocity??.84});
+      if(source?.excitationSeed!==undefined&&typeof source.excitationSeed!=='string')throw new Error('Graine d’excitation invalide');
+      events.push({kind:spectral?'spectral':'note',pitch,time,duration:length,instrument:instrument||base,level,cents,seed:source?.excitationSeed??id,role,source,spectral,velocity:source?.velocity??.84,...(source?.releaseTime!==undefined?{releaseTime:source.releaseTime}:{}),...(source?.brightness!==undefined?{brightness:source.brightness}:{}),...(source?.colorVelocity!==undefined?{colorVelocity:source.colorVelocity}:{}),...(source?.pitchCurve?{pitchCurve:source.pitchCurve}: {})});
     };
     const chord=(notes,time,length,instrument,id,level,role='target')=>{
       if(!Array.isArray(notes)||!notes.length)throw new Error('Accord vide');
@@ -23,7 +24,7 @@
       spec.score.events.forEach((e,i)=>{
         const time=finite(e.onsetTicks??0,'Position')*sec,raw=positive(e.durationTicks||ppq,'Durée')*sec,length=Math.max(.045,raw*clamp(e.gate??.84,.30,1.12)),velocity=clamp(e.velocity??.76,0,1),notes=e.notes||[],role=e.role||'target';
         duration=Math.max(duration,time+raw);
-        if(e.type==='percussion'||e.instrument&&!Array.isArray(e.notes))drum(e.instrument||'percussion',time,velocity,`${seed}:score:${i}:drum`,spec.kit||'studio',role==='target'?'percussion':role,e);
+        if(e.type==='percussion'||e.instrument&&!Array.isArray(e.notes))drum(e.instrument||'percussion',time,velocity,`${seed}:score:${i}:drum`,e.kit||spec.kit||'studio',role==='target'?'percussion':role,e);
         else notes.forEach((n,j)=>note(n,time,length,e.timbre||e.instrument||base,.54*velocity/Math.sqrt(Math.max(1,notes.length)),Array.isArray(e.cents)?e.cents[j]||0:e.cents||0,`${seed}:score:${i}:${j}`,role,e,e.spectralProfile||null));
       });
       duration=Math.max(duration,finite(score.endTicks||0,'Fin')*sec);
@@ -31,11 +32,11 @@
       const ppq=positive(spec.ppq||960,'PPQ'),unit=positive(spec.tempoUnitTicks||ppq,'Pulsation'),sec=60/(positive(spec.tempo||92,'Tempo')*unit),lead=countIn?finite(spec.countInTicks||0,'Décompte'):0,gap=lead?finite(spec.countInGapTicks||0,'Pause'):0;
       if(lead>0){const n=Math.max(1,Math.round(lead/unit));for(let i=0;i<n;i++)drum('woodblock',i*unit*sec,i===0?.62:.42,`${seed}:count:${i}`,'dry','target');}
       const shift=(lead+gap)*sec,swing=Number(spec.swing)||0;
-      [spec.events||[],...(spec.layers||[])].forEach((layer,l)=>layer.forEach(([kind,tick,velocity=.84,offset=0,role='target',root=null],i)=>{
+      [spec.events||[],...(spec.layers||[])].forEach((layer,l)=>layer.forEach(([kind,tick,velocity=.84,offset=0,role='target',root=null,meta=null],i)=>{
         tick=finite(tick,'Position');offset=finite(offset,'Décalage');const pos=((tick%ppq)+ppq)%ppq,warped=swing&&Math.abs(pos-ppq/2)<=1?tick+(swing-.5)*ppq:tick,time=shift+Math.max(0,warped+offset)*sec,id=`${seed}:${l}:${i}`;
         if(kind==='bassPulse')note(root??spec.contextRoot??36,time,.34,'bass',.34*velocity,0,id+':bass','context');
         else if(kind==='chordPulse'){const n=Number(root??spec.contextRoot??48);chord([n,n+4,n+7],time,.30,'epiano',id+':chord',.31*velocity,'context');}
-        else drum(kind,time,velocity,id,spec.kit||'studio',role==='context'?'context':'percussion');
+        else drum(kind,time,velocity,id,meta?.kit||spec.kit||'studio',role==='context'?'context':'percussion');
       }));
       duration=shift+positive(spec.durationTicks||ppq,'Durée rythmique')*sec;
     }else{
@@ -57,13 +58,13 @@
   }
   const concatenate=Events.concatenate;
   class Transport{
-    constructor(context,{render,onMarker=()=>{},onEnd=()=>{},setTimer=(f,ms)=>setTimeout(f,ms),clearTimer=id=>clearTimeout(id),lookahead=.55,intervalMs=25,requireRunning=false}={}){
-      if(!context||typeof render!=='function')throw new Error('Transport audio incomplet');this.context=context;this.requireRunning=requireRunning;this.render=render;this.onMarker=onMarker;this.onEnd=onEnd;this.setTimer=setTimer;this.clearTimer=clearTimer;this.lookahead=clamp(lookahead,.10,1);this.intervalMs=clamp(intervalMs,10,100);this.timer=null;this.running=false;this.waiters=[];
+    constructor(context,{render,onMarker=()=>{},onScheduleMarker=()=>{},onEnd=()=>{},setTimer=(f,ms)=>setTimeout(f,ms),clearTimer=id=>clearTimeout(id),lookahead=.55,intervalMs=25,requireRunning=false}={}){
+      if(!context||typeof render!=='function')throw new Error('Transport audio incomplet');this.context=context;this.requireRunning=requireRunning;this.render=render;this.onMarker=onMarker;this.onScheduleMarker=onScheduleMarker;this.onEnd=onEnd;this.setTimer=setTimer;this.clearTimer=clearTimer;this.lookahead=clamp(lookahead,.10,1);this.intervalMs=clamp(intervalMs,10,100);this.timer=null;this.running=false;this.waiters=[];
     }
     start(plan,{anchor=this.context.currentTime+.18,repeat=null}={}){
       plan=Events.plan(plan);if(repeat)repeat=Events.plan(repeat);if(!Number.isFinite(anchor)||anchor<this.context.currentTime)throw new Error('Timeline invalide');this.cancel();
-      this.plan=plan;this.current=plan;this.repeat=repeat;this.anchor=anchor;this.cycleStart=anchor;this.cycle=0;this.i=0;this.mi=0;this.markerCycle=0;this.markerStart=anchor;this.markerPlan=plan;this.running=true;this.tail=anchor+plan.duration;
-      this.stats={scheduled:0,late:0,cycles:0,maxBatch:0,maxDispatchMs:0};let resolve;const done=new Promise(r=>resolve=r);this.resolve=resolve;
+      this.plan=plan;this.current=plan;this.repeat=repeat;this.anchor=anchor;this.cycleStart=anchor;this.cycle=0;this.i=0;this.smi=0;this.mi=0;this.markerCycle=0;this.markerStart=anchor;this.markerPlan=plan;this.running=true;this.tail=anchor+plan.duration;
+      this.stats={scheduled:0,scheduledMarkers:0,late:0,cycles:0,maxBatch:0,maxDispatchMs:0};let resolve;const done=new Promise(r=>resolve=r);this.resolve=resolve;
       const result={start:anchor,end:this.tail,transportEnd:this.tail,duration:plan.duration,done,stats:this.stats};this.result=result;this.tick();return result;
     }
     waitUntil(time){if(!this.running)return Promise.resolve(false);if(this.context.currentTime>=time)return Promise.resolve(true);return new Promise(resolve=>this.waiters.push({time,resolve}));}
@@ -79,18 +80,26 @@
         const now=this.context.currentTime;if(this.context.state==='closed')throw new Error('Périphérique audio fermé');if(this.requireRunning&&['suspended','interrupted'].includes(this.context.state))throw new Error('Sortie externe arrêtée : horloge audio suspendue. Relancez après reprise.');
         let batch=0;
         for(;;){
-          while(this.i<this.current.events.length&&this.cycleStart+this.current.events[this.i].time<=now+this.lookahead){
-            const event=this.current.events[this.i],at=this.cycleStart+event.time;
+
+          for(;;){
+            const event=this.current.events[this.i],marker=this.current.markers[this.smi];
+            const et=event?.time??Infinity,mt=marker?.time??Infinity,isMarker=mt<=et,time=Math.min(et,mt),at=this.cycleStart+time;
+            if(!Number.isFinite(time)||at>now+this.lookahead)break;
             if(at<this.context.currentTime-.02){this.stats.late++;throw new Error('L’horloge audio a décroché. Relancez la lecture ou réduisez la densité.');}
-            const before=typeof performance!=='undefined'?performance.now():0,end=this.render(event,at);
-            if(!Number.isFinite(end))throw new Error('Fin sonore invalide');this.tail=Math.max(this.tail,end);this.stats.maxDispatchMs=Math.max(this.stats.maxDispatchMs,(typeof performance!=='undefined'?performance.now():0)-before);
-            this.i++;batch++;this.stats.scheduled++;if(batch>=2048)throw new Error('Densité audio hors budget');
+            if(isMarker){this.onScheduleMarker(marker,at);this.smi++;this.stats.scheduledMarkers++;}
+            else {
+              const before=typeof performance!=='undefined'?performance.now():0,end=this.render(event,at);
+              if(!Number.isFinite(end))throw new Error('Fin sonore invalide');
+              this.tail=Math.max(this.tail,end);this.stats.maxDispatchMs=Math.max(this.stats.maxDispatchMs,(typeof performance!=='undefined'?performance.now():0)-before);
+              this.i++;this.stats.scheduled++;
+            }
+            batch++;if(batch>=2048)throw new Error('Densité audio hors budget');
           }
-          if(this.i<this.current.events.length||!this.repeat||this.cycleStart+this.current.duration>now+this.lookahead)break;
-          this.cycleStart=this.anchor+this.plan.duration+this.cycle*this.repeat.duration;this.current=this.repeat;this.i=0;this.cycle++;this.stats.cycles=this.cycle;this.tail=Math.max(this.tail,this.cycleStart+this.current.duration);
+          if(this.i<this.current.events.length||this.smi<this.current.markers.length||!this.repeat||this.cycleStart+this.current.duration>now+this.lookahead)break;
+          this.cycleStart=this.anchor+this.plan.duration+this.cycle*this.repeat.duration;this.current=this.repeat;this.i=0;this.smi=0;this.cycle++;this.stats.cycles=this.cycle;this.tail=Math.max(this.tail,this.cycleStart+this.current.duration);
         }
         this.stats.maxBatch=Math.max(this.stats.maxBatch,batch);this.result.end=this.tail;
-        // Marker observation follows the audio clock, not the lookahead scheduling cursor.
+
         let markerBudget=0;for(;;){while(this.mi<this.markerPlan.markers.length&&this.markerStart+this.markerPlan.markers[this.mi].time<=now+1e-9){if(++markerBudget>2048)throw new Error('Densité de repères hors budget');this.onMarker(this.markerPlan.markers[this.mi++]);}
           if(!this.repeat||this.markerStart+this.markerPlan.duration>now+1e-9)break;
           if(++markerBudget>2048)throw new Error('Cycles de repères hors budget');this.markerStart=this.anchor+this.plan.duration+this.markerCycle*this.repeat.duration;this.markerCycle++;this.markerPlan=this.repeat;this.mi=0;

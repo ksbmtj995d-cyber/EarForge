@@ -29,5 +29,5 @@
     const manifest=M.xml(decode(await extract('META-INF/container.xml'))),rootfiles=Array.from(manifest.getElementsByTagNameNS('*','rootfile'));if(!rootfiles.length)throw new Error('Fichier racine MXL absent.');const name=safePath(rootfiles[0].getAttribute('full-path'));return{xml:decode(await extract(name)),entry:name,entries:files.size};
   }
   async function load(file){if(!file||typeof file.arrayBuffer!=='function')throw new Error('Sélectionner un fichier MusicXML.');if(file.size>ZIPCAP)throw new Error('Fichier trop volumineux.');const bytes=new Uint8Array(await file.arrayBuffer());if(bytes.length>ZIPCAP)throw new Error('Fichier trop volumineux.');const zipped=bytes[0]===80&&bytes[1]===75,result=zipped?await unzip(bytes):{xml:decode(bytes),entry:null};const score=M.parse(result.xml);score.sourceName=String(file.name||'Partition');if(globalThis.crypto?.subtle)score.sourceHash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');score.container={compressed:zipped,entry:result.entry};return score}
-  return{load,decode,unzip,crc32,safePath};
+  return{load,decode};
 });
